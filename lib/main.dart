@@ -12,8 +12,10 @@ class BottomNavigationWidget extends StatefulWidget {
 }
 
 class BottomNavigationWidgetState extends State<BottomNavigationWidget> {
+  // 设定进入时显示的模块
   int _currentIndex = 0;
 
+  // 将各个模块添加到List
   List<Widget> pages = new List();
   @override
 //initState是初始化函数，在绘制底部导航控件的时候就把这3个页面添加到list里面用于下面跟随标签导航进行切换显示
@@ -69,7 +71,6 @@ class BottomNavigationWidgetState extends State<BottomNavigationWidget> {
     );
   }
 }
-
 
 void main() => runApp(new MyApp());
 
