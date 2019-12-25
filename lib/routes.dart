@@ -5,6 +5,9 @@ import 'home.dart';
 final Map<String, Function> routes = {
   '/' : (context) => new LoadingWidget(),
   '/home' : (context) => new BottomNavigationWidget(),
+  '/createdb' : (context) => new CreateDatabaseWidget(),
+  // arguments传递参数
+  '/selectdb' : (context,{arguments}) => new SelectDatabaseWidget(arguments:arguments),
 };
 
 
