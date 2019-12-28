@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:accounts/database.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'entity.dart';
@@ -47,9 +48,11 @@ class Global {
   static Config config;
   // 是否跳过Loading页
   static bool jumpLoad;
+  static var db;
   //初始化全局信息
   static Future init() async {
     config = await getConfig();
+    db = await initDatabase(config.path, config.password);
     if (config == null) {
       jumpLoad = false;
     } else {
@@ -57,3 +60,5 @@ class Global {
     }
   }
 }
+
+

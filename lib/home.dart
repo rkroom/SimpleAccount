@@ -16,9 +16,13 @@ class BottomNavigationWidgetState extends State<BottomNavigationWidget> {
 
   // 将各个模块添加到List
   List<Widget> pages = new List();
+  // 标题
+  List titles = ["账单","添加","账户"];
   @override
 //initState是初始化函数，在绘制底部导航控件的时候就把这3个页面添加到list里面用于下面跟随标签导航进行切换显示
   void initState() {
+    super.initState();
+
     pages
       ..add(StatementWidget())
       ..add(AddWidget())
@@ -31,6 +35,9 @@ class BottomNavigationWidgetState extends State<BottomNavigationWidget> {
     返回一个脚手架，里面包含两个属性，一个是底部导航栏，另一个就是主体内容
      */
     return new Scaffold(
+      appBar: new AppBar(
+        title: Text(titles[_currentIndex]),
+      ),
       body: pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         //底部导航栏的创建需要对应的功能标签作为子项，每个子项包含一个图标和一个title。

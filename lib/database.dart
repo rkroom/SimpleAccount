@@ -168,3 +168,14 @@ selectDatabase(String path,String password)async {
   throw "wrong";
   }
 }
+
+initDatabase(String path,String password)async{
+  var db = await SQLiteDatabase.openDatabase(path, password: password);
+  // 获取数据库打开状态
+  bool isOpen = await db.isOpen;
+  if(isOpen){
+    return db;
+  }else{
+    return "err";
+  }
+}
