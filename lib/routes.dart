@@ -1,21 +1,24 @@
 import 'package:flutter/material.dart';
-import 'loading.dart';
-import 'home.dart';
+import 'package:simple_account/config.dart';
+import 'package:simple_account/manage.dart';
+import 'package:simple_account/loading.dart';
+import 'package:simple_account/home.dart';
 
 final Map<String, Function> routes = {
-  '/' : (context) => new LoadingWidget(),
-  '/home' : (context) => new BottomNavigationWidget(),
-  '/createdb' : (context) => new CreateDatabaseWidget(),
+  '/' : (context) =>   Global.jumpLoad?const BottomNavigationWidget():const LoadingWidget(),
+  '/home': (context) => const BottomNavigationWidget(),
+  '/createdb': (context) => const CreateDatabaseWidget(),
   // arguments传递参数
-  '/selectdb' : (context,{arguments}) => new SelectDatabaseWidget(arguments:arguments),
+  '/selectdb': (context, {arguments}) =>
+      SelectDatabaseWidget(arguments: arguments),
+  '/manage': (context) => const ManageWidget(),
+  '/accountFile': (context) => const LoadingWidget(),
 };
 
-
-
-Route<dynamic> onGenerateRoute(settings) {
+Route<dynamic>? onGenerateRoute(settings) {
   // 统一处理
   final String name = settings.name;
-  final Function pageContentBuilder = routes[name];
+  final Function? pageContentBuilder = routes[name];
   if (pageContentBuilder != null) {
     if (settings.arguments != null) {
       final Route route = MaterialPageRoute(
@@ -24,7 +27,7 @@ Route<dynamic> onGenerateRoute(settings) {
       return route;
     } else {
       final Route route =
-      MaterialPageRoute(builder: (context) => pageContentBuilder(context));
+          MaterialPageRoute(builder: (context) => pageContentBuilder(context));
       return route;
     }
   }
