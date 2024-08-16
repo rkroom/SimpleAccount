@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_picker_plus/flutter_picker_plus.dart';
-import 'package:simple_account/db.dart';
-import 'package:simple_account/event_bus.dart';
-import 'package:simple_account/tools.dart';
+
+
+import '../tools/db.dart';
+import '../tools/event_bus.dart';
+import '../tools/tools.dart';
+
 
 class ManageWidget extends StatefulWidget {
   const ManageWidget({super.key});

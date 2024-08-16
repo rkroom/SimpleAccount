@@ -3,9 +3,11 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
-import 'package:simple_account/db.dart';
-import 'package:simple_account/tools.dart';
-import 'config.dart';
+
+
+import '../tools/config.dart';
+import '../tools/db.dart';
+import '../tools/tools.dart';
 
 class CreateDatabaseWidget extends StatefulWidget {
   const CreateDatabaseWidget({super.key});

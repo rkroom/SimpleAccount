@@ -3,10 +3,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:simple_account/tools.dart';
+
+import '../tools/config.dart';
+import '../tools/tools.dart';
 import 'account.dart';
 import 'add.dart';
-import 'config.dart';
 import 'statement.dart';
 
 class BottomNavigationWidget extends StatefulWidget {

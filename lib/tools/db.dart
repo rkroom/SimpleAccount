@@ -1,9 +1,10 @@
 import 'dart:io';
 
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:simple_account/config.dart';
-import 'package:simple_account/entity.dart';
 import 'package:sqflite_sqlcipher/sqflite.dart';
+
+import 'config.dart';
+import 'entity.dart';
 
 class DB {
   static final DB _singleton = DB._internal();

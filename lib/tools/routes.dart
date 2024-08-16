@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:simple_account/config.dart';
-import 'package:simple_account/manage.dart';
-import 'package:simple_account/loading.dart';
-import 'package:simple_account/home.dart';
+
+import '../pages/home.dart';
+import '../pages/loading.dart';
+import '../pages/manage.dart';
+import 'config.dart';
+
 
 final Map<String, Function> routes = {
   '/' : (context) =>   Global.jumpLoad?const BottomNavigationWidget():const LoadingWidget(),
