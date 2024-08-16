@@ -288,7 +288,7 @@ class AccountWidgetState extends State<AccountWidget>
           Text("净资产： ${totalAssets + totalDebts}"),
           Text("本月支出： $currentlyMonthConsume"),
           Text("本月收入： $currentlyMonthIncome"),
-          Text("本月总计： ${currentlyMonthIncome - currentlyMonthConsume}"),
+          Text("本月总计： ${(currentlyMonthIncome - currentlyMonthConsume).toStringAsFixed(2)}"),
           Text("上月支出： $previousMonthConsume"),
           Text("上月收入： $previousMonthIncome"),
           SizedBox(

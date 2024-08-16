@@ -15,13 +15,14 @@ List<String> currentlyMonthDays() {
   DateTime date = DateTime.now();
   int year = date.year;
   int month = date.month;
-  if (month.toString().length == 1) {
-    month = int.parse("0$month");
-  }
+  
+  // 如果月份是单数位，添加前导0
+  String formattedMonth = month.toString().padLeft(2, '0');
+
   DateTime lastDayOfCurrentMonth = DateTime(year, month + 1, 0);
   return [
-    '$year-$month-01 00:00:00',
-    '$year-$month-${lastDayOfCurrentMonth.day} 23:59:59',
+    '$year-$formattedMonth-01 00:00:00',
+    '$year-$formattedMonth-${lastDayOfCurrentMonth.day} 23:59:59',
   ];
 }
 
@@ -35,17 +36,17 @@ List<String> previousMonthDays() {
     month = 12;
   }
 
-  if (month.toString().length == 1) {
-    month = int.parse("0$month");
-  }
+  // 如果月份是单数位，添加前导0
+  String formattedMonth = month.toString().padLeft(2, '0');
 
   DateTime lastDayOfPreviousMonth = DateTime(year, month + 1, 0);
 
   return [
-    '$year-$month-01 00:00:00',
-    '$year-$month-${lastDayOfPreviousMonth.day} 23:59:59',
+    '$year-$formattedMonth-01 00:00:00',
+    '$year-$formattedMonth-${lastDayOfPreviousMonth.day} 23:59:59',
   ];
 }
+
 
 String generateRandomString(int length) {
   final random = Random();
