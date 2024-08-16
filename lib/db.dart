@@ -85,7 +85,8 @@ JOIN TopValues t on a.id = t.account_info_id""",
   Future getCategorys(String flow) async {
     var db = await database;
     return db.rawQuery(
-        """select s.id,specific_category,f.first_level as name from books_account_category_specific as s 
+        """select s.id,specific_category,f.first_level as name 
+        from books_account_category_specific as s 
         LEFT JOIN books_account_category_first as f on s.parent_category_id = f.id where f.flow_sign = ?""",
         [flow]);
   }
@@ -238,7 +239,7 @@ JOIN TopValues t on a.id = t.account_info_id""",
     return db.rawQuery(
         """SELECT round(sum(b.detailed),2) as value,f.first_level as name FROM books_account_book as b left JOIN 
            books_account_category_specific as s on b.types_id = s.id LEFT JOIN books_account_category_first as f on s.parent_category_id = f.id 
-           WHERE flow="consume" AND when_time >= ? AND when_time <= ? GROUP BY parent_category_id""",
+           WHERE flow='consume' AND when_time >= ? AND when_time <= ? GROUP BY parent_category_id""",
         [querydateStart, querydateEnd]);
   }
 

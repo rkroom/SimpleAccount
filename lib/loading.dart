@@ -102,7 +102,7 @@ class CreateDatabaseWidgetState extends State<CreateDatabaseWidget> {
                                         //重启应用
                                         //Restart.restartApp();
                                         // 跳转到主页
-                                        if (mounted) {
+                                        if (context.mounted) {
                                           Navigator.of(context)
                                               .pushNamedAndRemoveUntil(
                                                   '/home',
@@ -122,7 +122,7 @@ class CreateDatabaseWidgetState extends State<CreateDatabaseWidget> {
                       await createConfig(dbFilePath, _passController.text);
                       //重启应用
                       //Restart.restartApp();
-                      if (mounted) {
+                      if (context.mounted) {
                         Navigator.of(context).pushNamedAndRemoveUntil(
                             '/home', (Route<dynamic> route) => false); //跳转
                       }
@@ -192,18 +192,18 @@ class SelectDatabaseWidgetState extends State<SelectDatabaseWidget> {
                       await createConfig(widget.arguments['filePath'][0],
                           _passController.text);
                       //Restart.restartApp();
-                      if (mounted) {
+                      if (context.mounted) {
                         Navigator.of(context).pushNamedAndRemoveUntil(
                             '/home', (Route<dynamic> route) => false);
                       }
                     } else {
-                      if (mounted) {
+                      if (context.mounted) {
                         showNoticeSnackBar(context, "请检查输入");
                       }
                     }
                   } catch (e) {
                     // 如果不能正确打开数据库，则弹出对话框
-                    if (mounted) {
+                    if (context.mounted) {
                       showNoticeSnackBar(context, "请检查输入");
                     }
                   }
@@ -276,13 +276,13 @@ class LoadingWidgetState extends State<LoadingWidget> {
                           await sourceFile.copy(targetFile.path);
                           targetPath = targetFile.path;
                         } catch (e) {
-                          if (mounted) {
+                          if (context.mounted) {
                             showNoticeSnackBar(context, '账本导入失败：$e');
                           }
                         }
                       }
                       // 导航跳转到密码输入页面，并且文件路径作为参数传递
-                      if (mounted) {
+                      if (context.mounted) {
                         Navigator.of(context)
                             .pushNamed('/selectdb', arguments: {
                           "filePath": [targetPath, fileName]

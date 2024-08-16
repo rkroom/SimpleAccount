@@ -123,12 +123,12 @@ class BottomNavigationWidgetState extends State<BottomNavigationWidget> {
                 var sourceFile = File(Global.config!.path);
                 try {
                   await sourceFile.copy(targetFile.path);
-                  if (mounted) {
+                  if (context.mounted) {
                     showNoticeSnackBar(context, '已导出到：${targetFile.path}');
                   }
                 } catch (e) {
                   //print(e);
-                  if (mounted) {
+                  if (context.mounted) {
                     showNoticeSnackBar(context, '账本导出失败：$e');
                   }
                 }

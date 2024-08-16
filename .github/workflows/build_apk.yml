@@ -1,0 +1,32 @@
+name: Build Android App
+
+on: [push,workflow_dispatch]
+
+jobs:
+  main:
+    runs-on: windows-latest
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@main
+        
+      - name: Set up JDK
+        uses: actions/setup-java@main
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+          
+      - name: Set up Flutter
+        uses: subosito/flutter-action@main
+        with:
+          channel: stable
+          cache: true
+      - run: flutter --version
+      - run: flutter pub get
+      - run: flutter build apk --release --split-per-abi
+      
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@main
+        with:
+          name: simple_account
+          path: build\app\outputs\flutter-apk\**
