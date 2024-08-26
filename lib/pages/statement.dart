@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 
 import '../tools/db.dart';
-
+import '../tools/event_bus.dart';
 
 class StatementWidget extends StatefulWidget {
   const StatementWidget({super.key});
@@ -29,6 +29,10 @@ class StatementWidgetState extends State<StatementWidget> {
     _pagingController.addPageRequestListener((pageKey) {
       _fetchPage(pageKey);
     });
+    bus.on("add_bill_success", (arg) {
+      _pagingController.refresh();
+    });
+    
   }
 
   Future<void> _fetchPage(int pageKey) async {
@@ -156,6 +160,7 @@ class StatementWidgetState extends State<StatementWidget> {
   void dispose() {
     _pagingController.dispose();
     super.dispose();
+    bus.off("add_bill_success");
   }
 }
 

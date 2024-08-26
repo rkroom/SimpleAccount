@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:simple_account/pages/bill_listener.dart';
 
 import '../pages/home.dart';
 import '../pages/loading.dart';
@@ -15,6 +16,7 @@ final Map<String, Function> routes = {
       SelectDatabaseWidget(arguments: arguments),
   '/manage': (context) => const ManageWidget(),
   '/accountFile': (context) => const LoadingWidget(),
+  '/billListener': (context) => const BillListenerWidget(),
 };
 
 Route<dynamic>? onGenerateRoute(settings) {

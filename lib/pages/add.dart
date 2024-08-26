@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart';
 import 'package:flutter_picker_plus/flutter_picker_plus.dart';
-
+import 'package:simple_account/widgets/consume.dart';
+import 'package:simple_account/widgets/quick_select.dart';
 
 import '../tools/db.dart';
 import '../tools/event_bus.dart';
@@ -17,8 +19,10 @@ class AddWidget extends StatefulWidget {
 }
 
 class AddWidgetState extends State<AddWidget>
-    with AutomaticKeepAliveClientMixin {
+    with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
   static const TextScaler customTextScaler = TextScaler.linear(1.2);
+  static const platform = MethodChannel('notification_listener');
+  bool _hasPermission = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -29,16 +33,17 @@ class AddWidgetState extends State<AddWidget>
   // 记录时间
   DateTime whenTime = DateTime.now();
   // 支出功能变量
+  String showConsumeAccount = "请选择";
+  int? consumeAccountId;
   List consumeCategory = [];
   List<int>? selectedConsumeCategory;
   String showConsumeCategory = "请选择";
   Map consumeCategoryIndex = {};
-  late int consumeCategoryId;
-  final TextEditingController _consumeAmountController =
-      TextEditingController();
-  final TextEditingController _consumeCommentController =
-      TextEditingController();
+  int? consumeCategoryId;
+
   // 收入功能变量
+  String showIncomeAccount = "请选择";
+  late int incomeAccountId;
   List incomeCategory = [];
   List<int>? selectedIncomeCategory;
   String showIncomeCategory = "请选择";
@@ -48,10 +53,6 @@ class AddWidgetState extends State<AddWidget>
   final TextEditingController _incomeCommentController =
       TextEditingController();
   // 转账功能变量
-  String showConsumeAccount = "请选择";
-  late int consumeAccountId;
-  String showIncomeAccount = "请选择";
-  late int incomeAccountId;
   String showTransferAccount = "请选择";
   late int transferAccountId;
   String showTransferAimAccount = "请选择";
@@ -65,61 +66,16 @@ class AddWidgetState extends State<AddWidget>
   Map accountIndex = {};
   Map accountType = {};
 
-  List<Map<String, dynamic>> dataArray = [];
-  List<Map<String, dynamic>> accountArray = [];
-
-// 获取分类
-  Future getCategory(String flow) async {
-    /*
-    查询数据库，并将结果转换为LIST，采用遍历将其转换LIST<MAP>形式的结构
-     */
-    // 查询数据库，并将结果转换为LIST
-    List list = (await DB().getCategorys(flow)).toList();
-    // category与对应Id的MAP
-    Map categoryIndex = {};
-
-    Map<String, List<String>> categoryMap = {};
-    // 遍历结果
-    for (var l in list) {
-      String specificCategory = l['specific_category']!;
-      String name = l['name']!;
-      if (!categoryMap.containsKey(name)) {
-        categoryMap[name] = [];
-      }
-      categoryMap[name]!.add(specificCategory);
-      categoryIndex[l["specific_category"]] = l["id"];
-    }
-    //分类List
-    List<Map<String, List<String>>> category = categoryMap.entries.map((entry) {
-      return {entry.key: entry.value};
-    }).toList();
-    // LIST，包含分类和分类的ID
-    return [category, categoryIndex];
-  }
-
-// 获取账户信息
-  Future getAccount() async {
-    List list = (await DB().getAccounts()).toList();
-    List accountName = [];
-    Map accountIndex = {};
-    Map accountType = {};
-    for (var l in list) {
-      accountName.add(l["name"]);
-      accountIndex[l["name"]] = l["id"];
-      accountType[l["id"]] = l["type"];
-    }
-    // 返回LIST，包含，账户名，账户ID，账户类型
-    return [accountName, accountIndex, accountType];
-  }
-
   @override
   void initState() {
     super.initState();
     // 初始化消费分类信息
     // 在initState方法中不能使用async，这里可以采用.then
     getCategory("consume").then((list) {
-      consumeCategory = list[0];
-      consumeCategoryIndex = list[1];
+      setState(() {
+        consumeCategory = list[0];
+        consumeCategoryIndex = list[1];
+      });
     });
     // 初始化收入分类信息
     getCategory("income").then((list) {
@@ -128,20 +84,10 @@ class AddWidgetState extends State<AddWidget>
     });
     // 初始化账户信息
     getAccount().then((list) {
-      accountName = list[0];
-      accountIndex = list[1];
-      accountType = list[2];
-    });
-
-    DB().getMostFrequentType("consume").then((v) {
       setState(() {
-        dataArray = v;
-      });
-    });
-
-    DB().getMostFrequentAccount("consume").then((v) {
-      setState(() {
-        accountArray = v;
+        accountName = list[0];
+        accountIndex = list[1];
+        accountType = list[2];
       });
     });
 
@@ -166,6 +112,32 @@ class AddWidgetState extends State<AddWidget>
       });
       setState(() {});
     });
+    platform.invokeMethod("checkNotificationPermission").then((hasPermission) {
+      setState(() {
+        _hasPermission = hasPermission;
+      });
+    });
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    if (state == AppLifecycleState.resumed) {
+      // 应用从后台恢复到前台时触发
+      setState(() {
+        whenTime = DateTime.now();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+    bus.off("update_category");
+    bus.off("update_account");
   }
 
   @override
@@ -207,216 +179,64 @@ class AddWidgetState extends State<AddWidget>
     );
   }
 
+  accountQuickSelect(item) {
+    setState(() {
+      showConsumeAccount = item["name"];
+      consumeAccountId = item["id"];
+    });
+  }
+
+  categoryQuickSelect(item) {
+    setState(() {
+      showConsumeCategory = item["category"];
+      selectedIncomeCategory =
+          findElementIndexes(consumeCategory, item["category"]);
+      consumeCategoryId = item["id"];
+    });
+  }
+
 //支出，收入，转账分别的页面。
   //支出
   Widget consume() {
     return Column(
       children: [
         Expanded(
-          child: GridView.count(
-            crossAxisCount: 3, // 每行的按钮数量，可以调整为你需要的数量
-            crossAxisSpacing: 8.0, // 横向间距
-            mainAxisSpacing: 8.0, // 纵向间距
-            childAspectRatio: 2, // 宽高比
-            children: dataArray.map((item) {
-              return Container(
-                margin: const EdgeInsets.all(8.0), // 添加间距
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      selectedConsumeCategory =
-                          findElementIndexes(consumeCategory, item['category']);
-                      showConsumeCategory = item['category'];
-                      consumeCategoryId = item['id'];
-                    });
-                  },
-                  child: Text(' ${item['category']}'),
-                ),
-              );
-            }).toList(),
-          ),
+          child: QuickSelect(
+              accountQuickSelect: accountQuickSelect,
+              categoryQuickSelect: categoryQuickSelect),
         ),
-        Expanded(
-          child: GridView.count(
-            crossAxisCount: 3, // 每行的按钮数量，可以调整为你需要的数量
-            crossAxisSpacing: 8.0, // 横向间距
-            mainAxisSpacing: 8.0, // 纵向间距
-            childAspectRatio: 2, // 宽高比
-            children: accountArray.map((item) {
-              return Container(
-                margin: const EdgeInsets.all(8.0), // 添加间距
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      showConsumeAccount = item['name'];
-                      consumeAccountId = item['id'];
-                    });
-                  },
-                  child: Text(' ${item['name']}'),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 20.0),
-          child: Align(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    const Text("金额："),
-                    SizedBox(
-                      width: 100,
-                      child: TextField(
-                        //只允许输入小数
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp("[0-9.]")),
-                        ],
-                        keyboardType: TextInputType.number,
-                        // 通过controller可以调用用户输入的数据
-                        controller: _consumeAmountController,
-                      ),
+        Stack(
+          children: [
+            Consume(
+                accountNames: accountName,
+                accountIndexs: accountIndex,
+                accountTypes: accountType,
+                categoryIndex: consumeCategoryIndex,
+                consumeCategories: consumeCategory,
+                time: whenTime,
+                consumeAccountText: showConsumeAccount,
+                accountId: consumeAccountId,
+                consumeCategoryText: showConsumeCategory,
+                categoryId: consumeCategoryId,
+                selectedCategory: selectedIncomeCategory),
+            if (defaultTargetPlatform == TargetPlatform.android) ...[
+              if (_hasPermission)
+                Positioned(
+                  bottom: 5.0,
+                  right: 12.0,
+                  child: IconButton(
+                    icon: Icon(
+                      size: 35.0,
+                      Icons.article,
+                      color: Colors.blue[600],
                     ),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(5),
-                  child: GestureDetector(
-                    // 手势
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () async {
-                      //点击事件
-                      // 支出类别
-                      Picker(
-                          // 打开时选择默认选择的分类，其类型为list
-                          selecteds: selectedConsumeCategory,
-                          // 选择器
-                          adapter: PickerDataAdapter<String>(
-                              pickerData: consumeCategory),
-                          changeToFirst: true,
-                          hideHeader: false,
-                          confirmText: "确认",
-                          cancelText: "取消",
-                          // 当点击确认按钮时
-                          onConfirm: (Picker picker, List<int> value) {
-                            setState(() {
-                              // 将默认值修改为本次的选择，下次打开时，其值为本次的选择
-                              selectedConsumeCategory = value;
-                              // 显示于界面的变量
-                              showConsumeCategory = picker.adapter.text;
-                              // 设置支出分类的ID
-                              consumeCategoryId = consumeCategoryIndex[
-                                  picker.getSelectedValues()[1]];
-                            });
-                          }).showModal(context);
+                    onPressed: () {
+                      Navigator.of(context).pushNamed('/billListener');
                     },
-                    // 界面显示
-                    child: Text(
-                      "类目：$showConsumeCategory",
-                      textScaler: customTextScaler,
-                    ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(5),
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () {
-                      // 账户类别
-                      Picker(
-                          confirmText: "确认",
-                          cancelText: "取消",
-                          adapter: PickerDataAdapter<String>(
-                              pickerData: accountName),
-                          changeToFirst: true,
-                          hideHeader: false,
-                          onConfirm: (Picker picker, List value) {
-                            setState(() {
-                              // 显示于界面
-                              showConsumeAccount = picker.adapter.text;
-                              // 设置支出账户的ID
-                              consumeAccountId =
-                                  accountIndex[picker.getSelectedValues()[0]];
-                            });
-                          }).showModal(context);
-                    },
-                    child: Text(
-                      "账户：$showConsumeAccount",
-                      textScaler: customTextScaler,
-                    ),
-                  ),
-                ),
-                // 手势检测器
-                Padding(
-                  padding: const EdgeInsets.all(5),
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    // 当单击时
-                    onTap: () {
-                      // 日期时间选择器
-                      DatePicker.showDateTimePicker(context,
-                          showTitleActions: true, onConfirm: (date) {
-                        setState(() {
-                          // 设置记录时间
-                          whenTime = date;
-                        });
-                      },
-                          // 打开时显示的时间
-                          currentTime: whenTime,
-                          // 语言
-                          locale: LocaleType.zh);
-                    },
-                    child: Text(
-                      // 对日期时间进行格式化
-                      "时间：${whenTime.year.toString()}-${whenTime.month.toString().padLeft(2, '0')}-${whenTime.day.toString().padLeft(2, '0')} ${whenTime.hour.toString().padLeft(2, '0')}:${whenTime.minute.toString().padLeft(2, '0')}",
-                      textScaler: customTextScaler,
-                    ),
-                  ),
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    const Text("备注："),
-                    // 使用Container包裹，以组装TextField
-                    SizedBox(
-                      width: 150,
-                      child: TextField(
-                        // 通过controller可以调用用户输入的数据
-                        controller: _consumeCommentController,
-                      ),
-                    ),
-                  ],
-                ),
-                ElevatedButton(
-                    //按钮
-                    child: const Text("添加"),
-                    // 点击按钮事件
-                    onPressed: () async {
-                      if (_consumeAmountController.text.isEmpty) {
-                        showNoticeSnackBar(context, "金额不能为空");
-                        return;
-                      }
-                      try {
-                        DB().addBill(
-                            consumeCategoryId,
-                            "consume",
-                            _consumeAmountController.text,
-                            consumeAccountId,
-                            _consumeCommentController.text,
-                            whenTime.toString());
-                        _consumeAmountController.clear();
-                        _consumeCommentController.clear();
-                      } catch (error) {
-                        //print(error);
-                        showNoticeSnackBar(context, "添加失败，请检查输入");
-                      }
-                    }),
-              ],
-            ),
-          ),
+            ]
+          ],
         )
       ],
     );
