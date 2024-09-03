@@ -38,6 +38,7 @@ class DB {
   ///
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {}
 
+  //根据时间获取最常出现类目
   Future getMostFrequentType(String flow,
       {int interval = -30, int limit = 6}) async {
     var db = await database;
@@ -60,6 +61,7 @@ class DB {
         [flow, flow, "$interval days", limit]);
   }
 
+  //根据时间获取最常用账户
   Future getMostFrequentAccount(String flow,
       {int interval = -30, int limit = 6}) async {
     var db = await database;
@@ -109,7 +111,7 @@ JOIN TopValues t on a.id = t.account_info_id""",
           detailed,
           account,
           comment,
-          time,
+          time.substring(0, 19),
         ]);
   }
 
@@ -124,7 +126,7 @@ JOIN TopValues t on a.id = t.account_info_id""",
           account,
           aimAccount,
           comment,
-          when,
+          when.substring(0, 19),
         ]);
   }
 

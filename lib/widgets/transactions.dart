@@ -5,19 +5,20 @@ import 'package:flutter_picker_plus/picker.dart';
 
 import '../tools/db.dart';
 import '../tools/tools.dart';
+import '../tools/config_enum.dart';
 
-class Consume extends StatefulWidget {
+class Transactions extends StatefulWidget {
   final String? amount;
+  final Transaction flow;
   final List accountNames;
   final Map accountIndexs;
-  final Map accountTypes;
   final List<int>? selectedCategory;
   final Map categoryIndex;
-  final List consumeCategories;
+  final List categories;
   final DateTime time;
-  final String consumeAccountText;
+  final String accountText;
   final int? accountId;
-  final String consumeCategoryText;
+  final String categoryText;
   final int? categoryId;
   final void Function(bool success)? addSuccess;
   final void Function(String value)? onAmountChanged;
@@ -25,19 +26,19 @@ class Consume extends StatefulWidget {
   final void Function(Map account)? onAccountConfirm;
   final void Function(DateTime time)? onTimeChanged;
 
-  const Consume({
+  const Transactions({
     super.key,
     this.amount,
+    required this.flow,
     required this.accountNames,
     required this.accountIndexs,
-    required this.accountTypes,
     this.selectedCategory,
     required this.categoryIndex,
-    required this.consumeCategories,
+    required this.categories,
     required this.time,
-    required this.consumeAccountText,
+    required this.accountText,
     required this.accountId,
-    required this.consumeCategoryText,
+    required this.categoryText,
     required this.categoryId,
     this.addSuccess,
     this.onAmountChanged,
@@ -52,70 +53,68 @@ class Consume extends StatefulWidget {
   }
 }
 
-class ConsumeState extends State<Consume> {
+class ConsumeState extends State<Transactions> {
   static const TextScaler customTextScaler = TextScaler.linear(1.2);
 
-  late TextEditingController _consumeAmountController;
+  late TextEditingController _amountController;
   // 账户信息
   late List accountName;
   late Map accountIndex;
   late Map accountType;
-  List<int>? selectedConsumeCategory;
-  late List consumeCategory;
+  List<int>? selectedCategory;
+  late List category;
   late DateTime whenTime;
-  late String showConsumeAccount;
+  late String showAccount;
 
-  late String showConsumeCategory;
-  late int consumeCategoryId;
-  late int consumeAccountId;
-  late Map consumeCategoryIndex;
-  final TextEditingController _consumeCommentController =
-      TextEditingController();
+  late String showCategory;
+  late int categoryId;
+  late int accountId;
+  late Map categoryIndex;
+  final TextEditingController _commentController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _consumeAmountController = TextEditingController(text: widget.amount);
+    _amountController = TextEditingController(text: widget.amount);
     accountName = widget.accountNames;
     accountIndex = widget.accountIndexs;
-    accountType = widget.accountTypes;
-    selectedConsumeCategory = widget.selectedCategory;
-    consumeCategoryIndex = widget.categoryIndex;
-    consumeCategory = widget.consumeCategories;
+    selectedCategory = widget.selectedCategory;
+    categoryIndex = widget.categoryIndex;
+    category = widget.categories;
     whenTime = widget.time;
-    showConsumeAccount = widget.consumeAccountText;
+    showAccount = widget.accountText;
     if (widget.accountId != null) {
-      consumeAccountId = widget.accountId!;
+      accountId = widget.accountId!;
     }
-    showConsumeCategory = widget.consumeCategoryText;
+    showCategory = widget.categoryText;
     if (widget.categoryId != null) {
-      consumeCategoryId = widget.categoryId!;
+      categoryId = widget.categoryId!;
     }
   }
 
   @override
-  void didUpdateWidget(covariant Consume oldWidget) {
+  void didUpdateWidget(covariant Transactions oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.consumeAccountText != widget.consumeAccountText) {
-      showConsumeAccount = widget.consumeAccountText; // 更新文本内容
+    if (oldWidget.accountText != widget.accountText) {
+      showAccount = widget.accountText; // 更新文本内容
     }
     if (oldWidget.accountId != widget.accountId) {
-      consumeAccountId = widget.accountId!;
+      accountId = widget.accountId!;
     }
     if (oldWidget.selectedCategory != widget.selectedCategory) {
-      selectedConsumeCategory = widget.selectedCategory;
+      selectedCategory = widget.selectedCategory;
     }
-    if (oldWidget.consumeCategoryText != widget.consumeCategoryText) {
-      showConsumeCategory = widget.consumeCategoryText;
+    if (oldWidget.categoryText != widget.categoryText) {
+      showCategory = widget.categoryText;
     }
     if (oldWidget.categoryId != widget.categoryId) {
-      consumeCategoryId = widget.categoryId!;
+      categoryId = widget.categoryId!;
     }
-    if (oldWidget.consumeCategories != widget.consumeCategories) {
-      consumeCategory = widget.consumeCategories;
+    if (oldWidget.categories != widget.categories) {
+      category = widget.categories;
     }
     if (oldWidget.categoryIndex != widget.categoryIndex) {
-      consumeCategoryIndex = widget.categoryIndex;
+      categoryIndex = widget.categoryIndex;
     }
     if (oldWidget.accountNames != widget.accountNames) {
       accountName = widget.accountNames;
@@ -147,11 +146,14 @@ class ConsumeState extends State<Consume> {
                       child: TextField(
                         //只允许输入小数
                         inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp("[0-9.]")),
+                          FilteringTextInputFormatter.allow(
+                            RegExp(r'^\d+\.?\d{0,2}'),
+                          ),
                         ],
-                        keyboardType: TextInputType.number,
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
                         // 通过controller可以调用用户输入的数据
-                        controller: _consumeAmountController,
+                        controller: _amountController,
                         onChanged: (value) =>
                             {widget.onAmountChanged?.call(value)},
                       ),
@@ -168,10 +170,10 @@ class ConsumeState extends State<Consume> {
                       // 支出类别
                       Picker(
                           // 打开时选择默认选择的分类，其类型为list
-                          selecteds: selectedConsumeCategory,
+                          selecteds: selectedCategory,
                           // 选择器
-                          adapter: PickerDataAdapter<String>(
-                              pickerData: consumeCategory),
+                          adapter:
+                              PickerDataAdapter<String>(pickerData: category),
                           changeToFirst: true,
                           hideHeader: false,
                           confirmText: "确认",
@@ -180,24 +182,24 @@ class ConsumeState extends State<Consume> {
                           onConfirm: (Picker picker, List<int> value) {
                             setState(() {
                               // 将默认值修改为本次的选择，下次打开时，其值为本次的选择
-                              selectedConsumeCategory = value;
+                              selectedCategory = value;
                               // 显示于界面的变量
-                              showConsumeCategory = picker.adapter.text;
+                              showCategory = picker.adapter.text;
                               // 设置支出分类的ID
-                              consumeCategoryId = consumeCategoryIndex[
-                                  picker.getSelectedValues()[1]];
+                              categoryId =
+                                  categoryIndex[picker.getSelectedValues()[1]];
                             });
                             widget.onCategoryConfirm?.call({
                               "selected": value,
                               "text": picker.adapter.text,
-                              "categoryId": consumeCategoryIndex[
-                                  picker.getSelectedValues()[1]]
+                              "categoryId":
+                                  categoryIndex[picker.getSelectedValues()[1]]
                             });
                           }).showModal(context);
                     },
                     // 界面显示
                     child: Text(
-                      "类目：$showConsumeCategory",
+                      "类目：$showCategory",
                       textScaler: customTextScaler,
                     ),
                   ),
@@ -218,9 +220,9 @@ class ConsumeState extends State<Consume> {
                           onConfirm: (Picker picker, List value) {
                             setState(() {
                               // 显示于界面
-                              showConsumeAccount = picker.adapter.text;
+                              showAccount = picker.adapter.text;
                               // 设置支出账户的ID
-                              consumeAccountId =
+                              accountId =
                                   accountIndex[picker.getSelectedValues()[0]];
                             });
                             widget.onAccountConfirm?.call({
@@ -231,7 +233,7 @@ class ConsumeState extends State<Consume> {
                           }).showModal(context);
                     },
                     child: Text(
-                      "账户：$showConsumeAccount",
+                      "账户：$showAccount",
                       textScaler: customTextScaler,
                     ),
                   ),
@@ -274,7 +276,7 @@ class ConsumeState extends State<Consume> {
                       width: 150,
                       child: TextField(
                         // 通过controller可以调用用户输入的数据
-                        controller: _consumeCommentController,
+                        controller: _commentController,
                       ),
                     ),
                   ],
@@ -284,21 +286,22 @@ class ConsumeState extends State<Consume> {
                     child: const Text("添加"),
                     // 点击按钮事件
                     onPressed: () async {
-                      if (_consumeAmountController.text.isEmpty) {
+                      if (_amountController.text.isEmpty) {
                         showNoticeSnackBar(context, "金额不能为空");
                         widget.addSuccess?.call(false);
                         return;
                       }
                       try {
                         DB().addBill(
-                            consumeCategoryId,
-                            "consume",
-                            _consumeAmountController.text,
-                            consumeAccountId,
-                            _consumeCommentController.text,
+                            categoryId,
+                            widget.flow.value,
+                            _amountController.text,
+                            accountId,
+                            _commentController.text,
                             whenTime.toString());
-                        _consumeAmountController.clear();
-                        _consumeCommentController.clear();
+                        _amountController.clear();
+                        _commentController.clear();
+                        //FocusScope.of(context).unfocus();
                         widget.addSuccess?.call(true);
                       } catch (error) {
                         debugPrint(error.toString());

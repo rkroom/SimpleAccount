@@ -5,7 +5,8 @@ import '../tools/bill_listener_box.dart';
 import '../tools/bill_listener_service.dart';
 import '../tools/event_bus.dart';
 import '../tools/tools.dart';
-import '../widgets/consume.dart';
+import '../tools/config_enum.dart';
+import '../widgets/transactions.dart';
 import '../widgets/quick_select.dart';
 
 class BillListenerWidget extends StatefulWidget {
@@ -59,7 +60,7 @@ class BillListenerWidgetState extends State<BillListenerWidget> {
       ];
     }
 
-    if (kReleaseMode) {
+    if (!kDebugMode) {
       BillListenerBox().getBills().then(
             (value) => {
               setState(() {
@@ -89,8 +90,8 @@ class BillListenerWidgetState extends State<BillListenerWidget> {
   }
 
   void _clearNotifications() async {
-    if (kReleaseMode) {
-      BillListenerService().clearBillListenerBox();
+    if (!kDebugMode) {
+      await BillListenerService().clearBillListenerBox();
     }
     setState(() {
       notifications = [];
@@ -98,6 +99,7 @@ class BillListenerWidgetState extends State<BillListenerWidget> {
   }
 
   void _accountQuickSelect(dynamic item) {
+    if (notifications.isEmpty) return;
     setState(() {
       notifications[0]["consumeAccountText"] = item["name"];
       notifications[0]["account"] = item["id"];
@@ -105,6 +107,7 @@ class BillListenerWidgetState extends State<BillListenerWidget> {
   }
 
   void _categoryQuickSelect(dynamic item) {
+    if (notifications.isEmpty) return;
     setState(() {
       notifications[0]["selectedCategory"] =
           findElementIndexes(categories[0], item['category']);
@@ -143,28 +146,28 @@ class BillListenerWidgetState extends State<BillListenerWidget> {
                 itemCount: notifications.length,
                 itemBuilder: (context, index) {
                   return Stack(children: [
-                    Consume(
+                    Transactions(
                       //添加UniqueKey，否则删除时，只会删除最后一个元素
                       key: UniqueKey(),
                       amount: notifications[index]["detailed"],
+                      flow: Transaction.consume,
                       accountNames: accounts[0],
                       accountIndexs: accounts[1],
-                      accountTypes: accounts[2],
-                      consumeCategories: categories[0],
+                      categories: categories[0],
                       categoryIndex: categories[1],
                       time: notifications[index]["time"],
                       accountId: notifications[index]["account"],
-                      consumeAccountText: notifications[index]
+                      accountText: notifications[index]
                           ["consumeAccountText"],
                       selectedCategory: notifications[index]
                           ["selectedCategory"],
-                      consumeCategoryText: notifications[index]
+                      categoryText: notifications[index]
                           ["consumeCategoryText"],
                       categoryId: notifications[index]["categoryId"],
-                      addSuccess: (success) {
+                      addSuccess: (success)async {
                         if (success) {
-                          if (kReleaseMode) {
-                            BillListenerService().delBill(index);
+                          if (!kDebugMode) {
+                            await BillListenerService().delBill(index);
                           }
                           bus.emit("add_bill_success");
                           setState(() {
@@ -197,9 +200,9 @@ class BillListenerWidgetState extends State<BillListenerWidget> {
                       right: 8.0, // 调整按钮与右侧的距离
                       child: IconButton(
                         icon: const Icon(Icons.delete),
-                        onPressed: () {
-                          if (kReleaseMode) {
-                            BillListenerService().delBill(index);
+                        onPressed: () async {
+                          if (!kDebugMode) {
+                            await BillListenerService().delBill(index);
                           }
                           setState(() {
                             notifications.removeAt(index);

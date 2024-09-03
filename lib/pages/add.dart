@@ -3,12 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart';
 import 'package:flutter_picker_plus/flutter_picker_plus.dart';
-import 'package:simple_account/widgets/consume.dart';
-import 'package:simple_account/widgets/quick_select.dart';
 
 import '../tools/db.dart';
 import '../tools/event_bus.dart';
 import '../tools/tools.dart';
+import '../tools/config_enum.dart';
+import '../widgets/quick_select.dart';
+import '../widgets/transactions.dart';
 
 class AddWidget extends StatefulWidget {
   const AddWidget({super.key});
@@ -43,15 +44,13 @@ class AddWidgetState extends State<AddWidget>
 
   // 收入功能变量
   String showIncomeAccount = "请选择";
-  late int incomeAccountId;
+  int? incomeAccountId;
   List incomeCategory = [];
-  List<int>? selectedIncomeCategory;
+  //List<int>? selectedIncomeCategory;
   String showIncomeCategory = "请选择";
   Map incomeCategoryIndex = {};
-  late int incomeCategoryId;
-  final TextEditingController _incomeAmountController = TextEditingController();
-  final TextEditingController _incomeCommentController =
-      TextEditingController();
+  int? incomeCategoryId;
+
   // 转账功能变量
   String showTransferAccount = "请选择";
   late int transferAccountId;
@@ -64,7 +63,10 @@ class AddWidgetState extends State<AddWidget>
   // 账户信息功能
   List accountName = [];
   Map accountIndex = {};
-  Map accountType = {};
+  //Map accountType = {};
+
+  //添加标志变量，当whenTime修改后一定时间内，应用从后台恢复到前台不修改whenTime
+  DateTime timeSign = DateTime.now();
 
   @override
   void initState() {
@@ -87,30 +89,34 @@ class AddWidgetState extends State<AddWidget>
       setState(() {
         accountName = list[0];
         accountIndex = list[1];
-        accountType = list[2];
+        //accountType = list[2];
       });
     });
 
     bus.on("update_category", (arg) {
       getCategory("consume").then((list) {
-        consumeCategory = list[0];
-        consumeCategoryIndex = list[1];
+        setState(() {
+          consumeCategory = list[0];
+          consumeCategoryIndex = list[1];
+        });
       });
       // 初始化收入分类信息
       getCategory("income").then((list) {
-        incomeCategory = list[0];
-        incomeCategoryIndex = list[1];
+        setState(() {
+          incomeCategory = list[0];
+          incomeCategoryIndex = list[1];
+        });
       });
-      setState(() {});
     });
 
     bus.on("update_account", (arg) {
       getAccount().then((list) {
-        accountName = list[0];
-        accountIndex = list[1];
-        accountType = list[2];
+        setState(() {
+          accountName = list[0];
+          accountIndex = list[1];
+          //accountType = list[2];
+        });
       });
-      setState(() {});
     });
     platform.invokeMethod("checkNotificationPermission").then((hasPermission) {
       setState(() {
@@ -124,10 +130,18 @@ class AddWidgetState extends State<AddWidget>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
 
-    if (state == AppLifecycleState.resumed) {
-      // 应用从后台恢复到前台时触发
+    // 仅处理 resumed 状态
+    if (state != AppLifecycleState.resumed) {
+      return;
+    }
+
+    // 获取当前时间
+    final DateTime now = DateTime.now();
+
+    // 如果时间差在3分钟以上，则更新 whenTime
+    if (now.difference(timeSign).inMinutes >= 3) {
       setState(() {
-        whenTime = DateTime.now();
+        whenTime = now;
       });
     }
   }
@@ -189,7 +203,7 @@ class AddWidgetState extends State<AddWidget>
   categoryQuickSelect(item) {
     setState(() {
       showConsumeCategory = item["category"];
-      selectedIncomeCategory =
+      selectedConsumeCategory =
           findElementIndexes(consumeCategory, item["category"]);
       consumeCategoryId = item["id"];
     });
@@ -207,18 +221,22 @@ class AddWidgetState extends State<AddWidget>
         ),
         Stack(
           children: [
-            Consume(
-                accountNames: accountName,
-                accountIndexs: accountIndex,
-                accountTypes: accountType,
-                categoryIndex: consumeCategoryIndex,
-                consumeCategories: consumeCategory,
-                time: whenTime,
-                consumeAccountText: showConsumeAccount,
-                accountId: consumeAccountId,
-                consumeCategoryText: showConsumeCategory,
-                categoryId: consumeCategoryId,
-                selectedCategory: selectedIncomeCategory),
+            Transactions(
+              flow: Transaction.consume,
+              accountNames: accountName,
+              accountIndexs: accountIndex,
+              categoryIndex: consumeCategoryIndex,
+              categories: consumeCategory,
+              time: whenTime,
+              accountText: showConsumeAccount,
+              accountId: consumeAccountId,
+              categoryText: showConsumeCategory,
+              categoryId: consumeCategoryId,
+              selectedCategory: selectedConsumeCategory,
+              onTimeChanged: (time) {
+                timeSign = DateTime.now();
+              },
+            ),
             if (defaultTargetPlatform == TargetPlatform.android) ...[
               if (_hasPermission)
                 Positioned(
@@ -250,144 +268,20 @@ class AddWidgetState extends State<AddWidget>
         children: [
           Positioned(
             bottom: 20,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    const Text("金额："),
-                    SizedBox(
-                      width: 100,
-                      child: TextField(
-                        //只允许输入小数
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp("[0-9.]")),
-                        ],
-                        keyboardType: TextInputType.number,
-                        // 通过controller可以调用用户输入的数据
-                        controller: _incomeAmountController,
-                      ),
-                    ),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(5),
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () async {
-                      // 支出类别
-                      Picker(
-                          confirmText: "确认",
-                          cancelText: "取消",
-                          selecteds: selectedIncomeCategory,
-                          adapter: PickerDataAdapter<String>(
-                              pickerData: incomeCategory),
-                          changeToFirst: true,
-                          hideHeader: false,
-                          onConfirm: (Picker picker, List<int> value) {
-                            setState(() {
-                              selectedIncomeCategory = value;
-                              showIncomeCategory = picker.adapter.text;
-                              incomeCategoryId = incomeCategoryIndex[
-                                  picker.getSelectedValues()[1]];
-                            });
-                          }).showModal(context);
-                    },
-                    child: Text(
-                      "类目：$showIncomeCategory",
-                      textScaler: customTextScaler,
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(5),
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () {
-                      // 账户类别
-                      Picker(
-                          confirmText: "确认",
-                          cancelText: "取消",
-                          adapter: PickerDataAdapter<String>(
-                              pickerData: accountName),
-                          hideHeader: false,
-                          onConfirm: (Picker picker, List value) {
-                            setState(() {
-                              showIncomeAccount = picker.adapter.text;
-                              incomeAccountId =
-                                  accountIndex[picker.getSelectedValues()[0]];
-                            });
-                          }).showModal(context);
-                    },
-                    child: Text(
-                      "账户：$showIncomeAccount",
-                      textScaler: customTextScaler,
-                    ),
-                  ),
-                ),
-                // 手势检测器
-                Padding(
-                  padding: const EdgeInsets.all(5),
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    // 当单击时
-                    onTap: () {
-                      // 日期时间选择器
-                      DatePicker.showDateTimePicker(context,
-                          showTitleActions: true, onConfirm: (date) {
-                        setState(() {
-                          whenTime = date;
-                        });
-                      },
-                          // 当前时间
-                          currentTime: whenTime,
-                          // 语言
-                          locale: LocaleType.zh);
-                    },
-                    child: Text(
-                      "时间：${whenTime.year.toString()}-${whenTime.month.toString().padLeft(2, '0')}-${whenTime.day.toString().padLeft(2, '0')} ${whenTime.hour.toString().padLeft(2, '0')}:${whenTime.minute.toString().padLeft(2, '0')}",
-                      textScaler: customTextScaler,
-                    ),
-                  ),
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    const Text("备注："),
-                    SizedBox(
-                      width: 150,
-                      child: TextField(
-                        // 通过controller可以调用用户输入的数据
-                        controller: _incomeCommentController,
-                      ),
-                    ),
-                  ],
-                ),
-                ElevatedButton(
-                    child: const Text("添加"),
-                    // 点击按钮事件
-                    onPressed: () async {
-                      if (_incomeAmountController.text.isEmpty) {
-                        showNoticeSnackBar(context, "金额不能为空");
-                        return;
-                      }
-                      try {
-                        DB().addBill(
-                            incomeCategoryId,
-                            "income",
-                            _incomeAmountController.text,
-                            incomeAccountId,
-                            _incomeCommentController.text,
-                            whenTime.toString());
-                        _incomeAmountController.clear();
-                        _incomeCommentController.clear();
-                      } catch (error) {
-                        //print(error);
-                        showNoticeSnackBar(context, "添加失败，请检查输入");
-                      }
-                    }),
-              ],
+            child: Transactions(
+              flow: Transaction.income,
+              accountNames: accountName,
+              accountIndexs: accountIndex,
+              categoryIndex: incomeCategoryIndex,
+              categories: incomeCategory,
+              time: whenTime,
+              accountText: showIncomeAccount,
+              accountId: incomeAccountId,
+              categoryText: showIncomeCategory,
+              categoryId: incomeCategoryId,
+              onTimeChanged: (time) {
+                timeSign = DateTime.now();
+              },
             ),
           ),
         ]);
@@ -409,12 +303,14 @@ class AddWidgetState extends State<AddWidget>
                 SizedBox(
                   width: 100,
                   child: TextField(
-                    //只允许输入小数
+                    // 只允许输入数字和小数
                     inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp("[0-9.]")),
+                      FilteringTextInputFormatter.allow(
+                        RegExp(r'^\d+\.?\d{0,2}'),
+                      ),
                     ],
-                    keyboardType: TextInputType.number,
-                    // 通过controller可以调用用户输入的数据
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
                     controller: _transferAmountController,
                   ),
                 ),
@@ -485,6 +381,7 @@ class AddWidgetState extends State<AddWidget>
                     setState(() {
                       whenTime = date;
                     });
+                    timeSign = DateTime.now();
                   },
                       // 当前时间
                       currentTime: whenTime,
@@ -525,6 +422,7 @@ class AddWidgetState extends State<AddWidget>
                         transferAimAccountId,
                         _transferCommentController.text,
                         whenTime.toString());
+                    //FocusScope.of(context).unfocus();
                     _transferAmountController.clear();
                     _transferCommentController.clear();
                   } catch (error) {

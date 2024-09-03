@@ -96,6 +96,7 @@ class MainActivity: FlutterActivity(){
 
     //getSystemService在部分版本（API26）已弃用，故此该方法并非在所有系统上都能使用
     //可考虑采用某些方法绕过系统限制，例如：https://github.com/rkroom/RestrictionBypass ，https://github.com/tiann/FreeReflection
+    //For backwards compatibility, getRunningServices will still return the caller's own services.
     private fun ensureCollectorRunning(context: Context): Boolean {
 
         val collectorComponent = ComponentName(context, MyNotificationListenerService::class.java)
@@ -103,7 +104,6 @@ class MainActivity: FlutterActivity(){
         var collectorRunning = false
 
         val runningServices = manager.getRunningServices(Int.MAX_VALUE)
-
 
         if (runningServices.isNullOrEmpty()) return false
 

@@ -63,10 +63,7 @@ class BottomNavigationWidgetState extends State<BottomNavigationWidget>
           await platform.invokeMethod('checkNotificationPermission');
       if (hasPermission) {
         //有权限时，启动监听服务
-        final billListenerService = BillListenerService();
-        billListenerService.init();
-        billListenerService.startBillListenerService();
-
+        await BillListenerService().startBillListenerService();
         //刷新组件以显示按钮
         setState(() {
           _childKey = UniqueKey();

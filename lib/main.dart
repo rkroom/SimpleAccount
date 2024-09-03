@@ -12,11 +12,11 @@ void main() {
   const platform = MethodChannel('notification_listener');
   // 初始化数据之后再加载UI，以及账单监听服务
   Global.init().whenComplete(() {
-    platform.invokeMethod('checkNotificationPermission').then((hasPermission) {
+    platform
+        .invokeMethod('checkNotificationPermission')
+        .then((hasPermission) async {
       if (hasPermission) {
-        final billListenerService = BillListenerService();
-        billListenerService.init();
-        billListenerService.startBillListenerService();
+        await BillListenerService().startBillListenerService();
       }
     });
     runApp(const MyApp());

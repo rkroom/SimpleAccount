@@ -1,10 +1,11 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 import '../tools/db.dart';
 import '../tools/tools.dart';
-
 
 class AccountWidget extends StatefulWidget {
   const AccountWidget({super.key});
@@ -21,7 +22,7 @@ class AccountWidgetState extends State<AccountWidget>
   bool get wantKeepAlive => true;
 
   // 标签
-  final tabs = ["账户", "统计"];
+  final tabs = ["统计", "账户"];
 
   static const _pageSize = 15;
   final TextEditingController _newAccountNameController =
@@ -43,6 +44,7 @@ class AccountWidgetState extends State<AccountWidget>
   double currentlyMonthSummed = 0;
 
   List<PieChartSectionData> pieChartSections = [];
+  List<Map> colorAndName = [];
 
   double checkDBresult(value) {
     if (value == null) {
@@ -85,23 +87,62 @@ class AccountWidgetState extends State<AccountWidget>
     });
   }
 
+  Color getRandomColor() {
+    Random random = Random();
+    return Color.fromARGB(
+        100, random.nextInt(256), random.nextInt(256), random.nextInt(256));
+  }
+
+  // 转换为字符串并去除尾随零
+  String formatNumber(double number) {
+    // 尝试将 number 转换为 int
+    if (number == number.toInt()) {
+      // 如果没有小数部分，转为 int
+      return number.toInt().toString();
+    } else {
+      // 如果有小数部分，保持原样
+      return number.toString();
+    }
+  }
+
   void getFirstLevelConsume() {
     var cmd = currentlyMonthDays();
     DB().getFirstLevelConsumeAnalysis(cmd[0], cmd[1]).then((value) {
       double total = 0;
+
       for (var e in value) {
         total = total + e['value'];
       }
+      var initialOffset = 0.3;
       for (var e in value) {
+        Color color = getRandomColor();
+        colorAndName.add({
+          "color": color,
+          "name":
+              //"${e["name"]}(${((e["value"] / total) * 100).toStringAsFixed(2)}%)",
+              "${e["name"]}\n${formatNumber(e["value"])}",
+          "amount": e["value"],
+        });
+        var percent = (e["value"] / total);
+        var offset = 0.8;
+        if (percent <= 0.02) {
+          offset = initialOffset;
+          if (initialOffset <= 0.9) {
+            initialOffset = initialOffset + 0.2;
+          }
+        }
         pieChartSections.add(PieChartSectionData(
+          color: color,
           value: e["value"],
-          title:
-              '${e["name"]}\n${e["value"]}(${((e["value"] / total) * 100).toStringAsFixed(2)}%)',
+          title: "${(percent * 100).toStringAsFixed(2)}%",
+          titlePositionPercentageOffset: offset,
           radius: 120,
         ));
       }
+      colorAndName.sort((a, b) => b['amount'].compareTo(a['amount']));
       setState(() {
         pieChartSections;
+        colorAndName;
       });
     });
   }
@@ -120,8 +161,8 @@ class AccountWidgetState extends State<AccountWidget>
   listPages() {
     List<Widget> tabPages = [];
     return tabPages
-      ..add(account())
-      ..add(statistics());
+      ..add(statistics())
+      ..add(account());
   }
 
 // 返回页面
@@ -164,14 +205,18 @@ class AccountWidgetState extends State<AccountWidget>
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('${item['name']}'),
-          content: Column(
-            children: [
-              const Text('是否修改账户名称 ?'),
-              TextField(
-                controller: _newAccountNameController,
-                decoration: const InputDecoration(labelText: '输入新名称'),
-              ),
-            ],
+          content: SizedBox(
+            //设置高度
+            height: 100,
+            child: Column(
+              children: [
+                const Text('是否修改账户名称 ?'),
+                TextField(
+                  controller: _newAccountNameController,
+                  decoration: const InputDecoration(labelText: '输入新名称'),
+                ),
+              ],
+            ),
           ),
           actions: <Widget>[
             TextButton(
@@ -257,9 +302,9 @@ class AccountWidgetState extends State<AccountWidget>
                   title: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        Expanded(child:Text(item['name'])),
-                        Expanded(child:Text(item['type'])),
-                        Expanded(child:Text(item['balance'].toString()))
+                        Expanded(child: Text(item['name'])),
+                        Expanded(child: Text(item['type'])),
+                        Expanded(child: Text(item['balance'].toString()))
                       ]),
                   //subtitle: Text('ID: ${item['id']}'),
                   onTap: () {
@@ -285,18 +330,51 @@ class AccountWidgetState extends State<AccountWidget>
     return Scaffold(
       body: Column(
         children: [
-          Text("总资产： $totalAssets"),
-          Text("总负债： ${0 - totalDebts}"),
-          Text("净资产： ${totalAssets + totalDebts}"),
-          Text("本月支出： $currentlyMonthConsume"),
-          Text("本月收入： $currentlyMonthIncome"),
-          Text("本月总计： ${(currentlyMonthIncome - currentlyMonthConsume).toStringAsFixed(2)}"),
-          Text("上月支出： $previousMonthConsume"),
-          Text("上月收入： $previousMonthIncome"),
+          Wrap(
+              spacing: 5.0, // 水平方向的间距
+              runSpacing: 2.0, // 垂直方向的间距
+              children: [
+                Text("总资产： $totalAssets"),
+                Text("总负债： ${0 - totalDebts}"),
+                Text("净资产： ${totalAssets + totalDebts}"),
+                Text("本月支出： $currentlyMonthConsume"),
+                Text("本月收入： $currentlyMonthIncome"),
+                Text(
+                    "本月总计： ${(currentlyMonthIncome - currentlyMonthConsume).toStringAsFixed(1)}"),
+                Text("上月支出： $previousMonthConsume"),
+                Text("上月收入： $previousMonthIncome"),
+              ]),
           SizedBox(
-              height: 300,
-              child: PieChart(PieChartData(
-                  centerSpaceRadius: 0, sections: pieChartSections))),
+            height: 300,
+            child: PieChart(
+                PieChartData(centerSpaceRadius: 0, sections: pieChartSections)),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 5.0),
+              child: GridView.count(
+                crossAxisCount: 3, // 每行的按钮数量，可以调整为你需要的数量
+                crossAxisSpacing: 8.0, // 横向间距
+                mainAxisSpacing: 8.0, // 纵向间距
+                childAspectRatio: 2.5, // 宽高比
+                children: List.generate(colorAndName.length, (index) {
+                  return Container(
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.all(1.0),
+                    decoration: BoxDecoration(
+                      color: colorAndName[index]["color"],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      colorAndName[index]["name"], // 显示标签文本
+                      style: const TextStyle(fontSize: 16),
+                      textAlign: TextAlign.center,
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ),
         ],
       ),
     );

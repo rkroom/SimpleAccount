@@ -2,13 +2,21 @@ import 'package:flutter/services.dart';
 
 import 'bill_listener_box.dart';
 import 'event_bus.dart';
-import 'tools.dart';
 
 class BillListenerService {
-  late MethodChannel platform;
+  // 单例实例
+  static final BillListenerService _instance = BillListenerService._internal();
+
+  // 私有构造函数
+  BillListenerService._internal();
+
+  // 提供静态的实例获取方法
+  factory BillListenerService() {
+    return _instance;
+  }
 
 //RegExp regExp = RegExp(r"(\d+(\.\d{1,2})?)");
-  RegExp regExp = RegExp(r"(\d+\.\d{2})");
+  static RegExp regExp = RegExp(r"(\d+\.\d{2})");
   // 需要处理的包名
   static const List<String> allowPackageName = [
     'com.eg.android.AlipayGphone',
@@ -17,14 +25,19 @@ class BillListenerService {
   // 关键字
   static const List<String> allowKeywords = ['交易', '支付'];
 
-  late List accounts;
+  bool _isInitialized = false;
 
-  void init() async {
-    platform = const MethodChannel('notification_listener');
-    accounts = await getAccount();
+  late MethodChannel platform;
+
+  Future<void> init() async {
+    if (!_isInitialized) {
+      platform = const MethodChannel('notification_listener');
+      _isInitialized = true;
+    }
   }
 
-  void startBillListenerService() {
+  Future<void> startBillListenerService() async {
+    await init();
     platform.setMethodCallHandler(_handleMethodCall);
   }
 
@@ -45,11 +58,14 @@ class BillListenerService {
     final RegExpMatch? match = regExp.firstMatch(content);
     if (match == null) return;
 
+    int? account;
+    String consumeAccountText = "请选择";
+
     final bill = {
       "detailed": match.group(0),
-      "account": null,
+      "account": account,
       "time": DateTime.fromMillisecondsSinceEpoch(postTime),
-      "consumeAccountText": "请选择",
+      "consumeAccountText": consumeAccountText,
       "selectedCategory": null,
       "consumeCategoryText": "请选择",
       "categoryId": null,
@@ -60,11 +76,11 @@ class BillListenerService {
     bus.emit("bill_listener", bill);
   }
 
-  void clearBillListenerBox() async {
+  Future<void> clearBillListenerBox() async {
     await BillListenerBox().clearBills();
   }
 
-  void delBill(int index) async {
+  Future<void> delBill(int index) async {
     await BillListenerBox().delBill(index);
   }
 }
