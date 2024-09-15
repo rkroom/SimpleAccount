@@ -5,6 +5,7 @@ import 'package:sqflite_sqlcipher/sqflite.dart';
 
 import 'config.dart';
 import 'entity.dart';
+import 'tools.dart';
 
 class DB {
   static final DB _singleton = DB._internal();
@@ -38,8 +39,20 @@ class DB {
   ///
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {}
 
+  Future<List> getMonthlyTransactions() async {
+    var db = await database;
+    var cmd = currentlyMonthDays();
+    return db.rawQuery("""
+      SELECT date(when_time) AS date, round(sum(detailed),2) AS amount
+      FROM books_account_book
+      WHERE when_time > ?
+      AND flow = ?
+      GROUP BY date
+      ORDER BY date""", [cmd[0], "consume"]);
+  }
+
   //根据时间获取最常出现类目
-  Future getMostFrequentType(String flow,
+  Future<List> getMostFrequentType(String flow,
       {int interval = -30, int limit = 6}) async {
     var db = await database;
     return db.rawQuery("""WITH MaxDate as(
@@ -87,8 +100,7 @@ JOIN TopValues t on a.id = t.account_info_id""",
   //根据支出/收入获取类目
   Future getCategorys(String flow) async {
     var db = await database;
-    return db.rawQuery(
-        """select s.id,specific_category,f.first_level as name 
+    return db.rawQuery("""select s.id,specific_category,f.first_level as name 
         from books_account_category_specific as s 
         LEFT JOIN books_account_category_first as f on s.parent_category_id = f.id where f.flow_sign = ?""",
         [flow]);

@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:simple_account/pages/bill_listener.dart';
+import 'package:simple_account/pages/statistic.dart';
 
 import '../pages/home.dart';
 import '../pages/loading.dart';
 import '../pages/manage.dart';
 import 'config.dart';
 
-
 final Map<String, Function> routes = {
-  '/' : (context) =>   Global.jumpLoad?const BottomNavigationWidget():const LoadingWidget(),
+  '/': (context) =>
+      Global.jumpLoad ? const BottomNavigationWidget() : const LoadingWidget(),
   '/home': (context) => const BottomNavigationWidget(),
   '/createdb': (context) => const CreateDatabaseWidget(),
   // arguments传递参数
@@ -17,6 +18,7 @@ final Map<String, Function> routes = {
   '/manage': (context) => const ManageWidget(),
   '/accountFile': (context) => const LoadingWidget(),
   '/billListener': (context) => const BillListenerWidget(),
+  '/statistic': (context) => const StatisticWidget(),
 };
 
 Route<dynamic>? onGenerateRoute(settings) {

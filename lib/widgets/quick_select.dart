@@ -26,7 +26,7 @@ class QuickSelectState extends State<QuickSelect> {
     super.initState();
     DB().getMostFrequentType("consume").then((v) {
       setState(() {
-        categoryArray = v;
+        categoryArray = v as List<Map<String, dynamic>>;
       });
     });
 

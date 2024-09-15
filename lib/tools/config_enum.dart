@@ -9,3 +9,12 @@ enum Transaction {
   // 枚举的构造函数，用于初始化每个枚举值的字符串
   const Transaction(this.value);
 }
+
+enum AccountType {
+  debt("debt"),
+  asset("asset");
+
+  final String value;
+
+  const AccountType(this.value);
+}

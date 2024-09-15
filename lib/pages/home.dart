@@ -8,6 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../tools/bill_listener_service.dart';
 import '../tools/config.dart';
+import '../tools/notification_service.dart';
 import '../tools/tools.dart';
 import 'account.dart';
 import 'add.dart';
@@ -42,7 +43,8 @@ class BottomNavigationWidgetState extends State<BottomNavigationWidget>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-
+    //初始化通知服务
+    NotificationService().initNotification();
     pages = [
       AddWidget(
         key: _childKey,
@@ -50,6 +52,7 @@ class BottomNavigationWidgetState extends State<BottomNavigationWidget>
       const StatementWidget(),
       const AccountWidget()
     ];
+    scheduleDailyTask();
   }
 
   @override
@@ -192,6 +195,15 @@ class BottomNavigationWidgetState extends State<BottomNavigationWidget>
                       showNoticeSnackBar(context, '已导出到：${targetFile.path}');
                     }
                   }
+                },
+              ),
+              ListTile(
+                title: const Text('记录图表'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.of(context)
+                      .pushNamed('/statistic')
+                      .then((value) => {});
                 },
               ),
               if (defaultTargetPlatform == TargetPlatform.android) ...[

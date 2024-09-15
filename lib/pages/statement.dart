@@ -32,7 +32,6 @@ class StatementWidgetState extends State<StatementWidget> {
     bus.on("add_bill_success", (arg) {
       _pagingController.refresh();
     });
-    
   }
 
   Future<void> _fetchPage(int pageKey) async {
@@ -68,7 +67,7 @@ class StatementWidgetState extends State<StatementWidget> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('确认'),
-          content: Text('是否确认删除金额为: ${item['detailed']} 的账单?'),
+          content: Text('是否确认删除金额为: ${item['detailed']} 的记录?'),
           actions: <Widget>[
             TextButton(
               onPressed: () {
@@ -111,24 +110,22 @@ class StatementWidgetState extends State<StatementWidget> {
                         children: [
                           Expanded(flex: 3, child: Text(item['account'])),
                           Expanded(
-                              flex: 2,
-                              child: Text(item['detailed'].toString())),
-                          Expanded(flex: 2, child: Text(item['flow'])),
+                              flex: 3,
+                              child: Text(
+                                  "${item['flow'] == '支出' ? '-' : ''}${item['detailed'].toString()}")),
+                          //Expanded(flex: 2, child: Text(item['flow'])),
                           if (item['aim_account'] != null)
                             Expanded(flex: 3, child: Text(item['aim_account'])),
                           if (item['category'] != null)
                             Expanded(flex: 3, child: Text(item['category']))
                         ]),
                     subtitle: Row(children: [
-                      //Container(
-                      //  width: 20,
-                      //),
-                      Row(children: [
-                        Text(item['date'].substring(5)),
-                        const Text(" "),
-                        if (item['comment'] != null && item['comment'] != '')
-                          Text('备注: ${item['comment']}'),
-                      ])
+                      Text(
+                          "${item['flow'] == '转账' ? item['flow'] + '\n' : ''}${item['date'].substring(5)}"),
+                      const Text(" "),
+                      if (item['comment'] != null && item['comment'] != '')
+                        Text(
+                            '${item['flow'] == '转账' ? '\n' : ''}备注: ${item['comment']}'),
                     ]),
                     onTap: () {
                       onItemPressed(item);

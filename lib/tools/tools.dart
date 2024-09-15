@@ -1,6 +1,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
+import 'config_enum.dart';
 import 'db.dart';
 
 void showNoticeSnackBar(BuildContext context, String message) {
@@ -13,20 +15,27 @@ void showNoticeSnackBar(BuildContext context, String message) {
   ScaffoldMessenger.of(context).showSnackBar(snackBar);
 }
 
-// 获取当前月份，由此计算本月收支
+// 获取当前月份
 List<String> currentlyMonthDays() {
   DateTime date = DateTime.now();
   int year = date.year;
   int month = date.month;
 
-  // 如果月份是单数位，添加前导0
-  String formattedMonth = month.toString().padLeft(2, '0');
+  // 使用 DateFormat 格式化月份
+  DateFormat monthFormat = DateFormat('MM');
+  monthFormat.format(DateTime(year, month));
 
   DateTime lastDayOfCurrentMonth = DateTime(year, month + 1, 0);
-  return [
-    '$year-$formattedMonth-01 00:00:00',
-    '$year-$formattedMonth-${lastDayOfCurrentMonth.day} 23:59:59',
-  ];
+
+  // 使用 DateFormat 格式化日期时间
+  DateFormat dateFormat = DateFormat('yyyy-MM-dd HH:mm:ss');
+
+  // 生成第一天和最后一天的时间字符串
+  String firstDayFormatted =
+      dateFormat.format(DateTime(year, month, 1, 0, 0, 0));
+  String lastDayFormatted = dateFormat
+      .format(DateTime(year, month, lastDayOfCurrentMonth.day, 23, 59, 59));
+  return [firstDayFormatted, lastDayFormatted];
 }
 
 List<String> previousMonthDays() {
@@ -158,3 +167,102 @@ Future getCategory(String flow) async {
     overlayEntry.remove();
   });
 }*/
+
+List<String> getThisWeekRange() {
+  // 获取当前时间
+  DateTime now = DateTime.now();
+
+  // 计算当前日期是星期几 (星期一是1，星期天是7)
+  int dayOfWeek = now.weekday;
+
+  // 计算本周的周一日期
+  DateTime startOfWeek = now.subtract(Duration(days: dayOfWeek - 1));
+
+  // 计算本周的周日日期
+  DateTime endOfWeek = now.add(Duration(days: 7 - dayOfWeek));
+
+  // 设置日期格式
+  DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm:ss');
+
+  // 生成周一 00:00:00 和周日 23:59:59 的日期
+  DateTime startOfWeekStart =
+      DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day, 0, 0, 0);
+  DateTime endOfWeekEnd =
+      DateTime(endOfWeek.year, endOfWeek.month, endOfWeek.day, 23, 59, 59);
+
+  // 格式化日期
+  String startOfWeekStr = formatter.format(startOfWeekStart);
+  String endOfWeekStr = formatter.format(endOfWeekEnd);
+
+  // 返回结果
+  return [startOfWeekStr, endOfWeekStr];
+}
+
+List<String> getPreviousDayRange() {
+  // 获取当前时间
+  DateTime now = DateTime.now();
+
+  // 获取前一天的日期
+  DateTime previousDay = now.subtract(const Duration(days: 1));
+
+  // 设置日期格式
+  DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm:ss');
+
+  // 生成前一天的开始和结束时间
+  DateTime startOfDay =
+      DateTime(previousDay.year, previousDay.month, previousDay.day, 0, 0, 0);
+  DateTime endOfDay = DateTime(
+      previousDay.year, previousDay.month, previousDay.day, 23, 59, 59);
+
+  // 格式化日期
+  String startOfDayStr = formatter.format(startOfDay);
+  String endOfDayStr = formatter.format(endOfDay);
+
+  // 返回结果
+  return [startOfDayStr, endOfDayStr];
+}
+
+List<String> getTodayRange() {
+  // 获取当前时间
+  DateTime now = DateTime.now();
+
+  // 生成今日的 00:00:00 的日期
+  DateTime startOfDay = DateTime(now.year, now.month, now.day, 0, 0, 0);
+
+  // 设置日期格式
+  DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm:ss');
+
+  // 格式化日期
+  String startOfDayStr = formatter.format(startOfDay);
+  String nowStr = formatter.format(now);
+
+  // 返回结果
+  return [startOfDayStr, nowStr];
+}
+
+double checkDBresult(value) {
+  if (value == null) {
+    return 0;
+  }
+  if (value.isNaN) {
+    return 0;
+  }
+  return value;
+}
+
+Future<Map> periodicStatistics() async {
+  var cmd = currentlyMonthDays();
+  var currentlyMonthConsumption = checkDBresult((await DB()
+      .timeStatistics(Transaction.consume.value, cmd[0], cmd[1]))[0]["amount"]);
+  var today = getTodayRange();
+  var todayConsumption = checkDBresult((await DB().timeStatistics(
+      Transaction.consume.value, today[0], today[1]))[0]["amount"]);
+  var previousDay = getPreviousDayRange();
+  var previousDayConsumption = checkDBresult((await DB().timeStatistics(
+      Transaction.consume.value, previousDay[0], previousDay[1]))[0]["amount"]);
+  return {
+    "currentlyMonthConsumption": currentlyMonthConsumption,
+    "todayConsumption": todayConsumption,
+    "previousDayConsumption": previousDayConsumption
+  };
+}

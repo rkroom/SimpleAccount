@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:fl_chart/fl_chart.dart';
 
+import '../tools/config_enum.dart';
 import '../tools/db.dart';
 import '../tools/tools.dart';
 
@@ -42,19 +43,11 @@ class AccountWidgetState extends State<AccountWidget>
   double previousMonthConsume = 0;
   double previousMonthIncome = 0;
   double currentlyMonthSummed = 0;
+  double previousDayConsume = 0;
+  double currentlyDayConsume = 0;
 
   List<PieChartSectionData> pieChartSections = [];
   List<Map> colorAndName = [];
-
-  double checkDBresult(value) {
-    if (value == null) {
-      return 0;
-    }
-    if (value.isNaN) {
-      return 0;
-    }
-    return value;
-  }
 
   void getStatistics() {
     DB().totalBalance('asset').then((value) {
@@ -68,22 +61,47 @@ class AccountWidgetState extends State<AccountWidget>
     });
 
     var cmd = currentlyMonthDays();
-    DB().timeStatistics('consume', cmd[0], cmd[1]).then((value) {
-      currentlyMonthConsume = checkDBresult(value[0]["amount"]);
-      setState(() {});
+    DB()
+        .timeStatistics(Transaction.consume.value, cmd[0], cmd[1])
+        .then((value) {
+      setState(() {
+        currentlyMonthConsume = checkDBresult(value[0]["amount"]);
+      });
     });
-    DB().timeStatistics('income', cmd[0], cmd[1]).then((value) {
-      currentlyMonthIncome = checkDBresult(value[0]["amount"]);
-      setState(() {});
+    DB().timeStatistics(Transaction.income.value, cmd[0], cmd[1]).then((value) {
+      setState(() {
+        currentlyMonthIncome = checkDBresult(value[0]["amount"]);
+      });
     });
     var pmd = previousMonthDays();
-    DB().timeStatistics('consume', pmd[0], pmd[1]).then((value) {
-      previousMonthConsume = checkDBresult(value[0]["amount"]);
-      setState(() {});
+    DB()
+        .timeStatistics(Transaction.consume.value, pmd[0], pmd[1])
+        .then((value) {
+      setState(() {
+        previousMonthConsume = checkDBresult(value[0]["amount"]);
+      });
     });
-    DB().timeStatistics('income', pmd[0], pmd[1]).then((value) {
-      previousMonthIncome = checkDBresult(value[0]["amount"]);
-      setState(() {});
+    DB().timeStatistics(Transaction.income.value, pmd[0], pmd[1]).then((value) {
+      setState(() {
+        previousMonthIncome = checkDBresult(value[0]["amount"]);
+      });
+    });
+    var today = getTodayRange();
+    DB()
+        .timeStatistics(Transaction.consume.value, today[0], today[1])
+        .then((value) {
+      setState(() {
+        currentlyDayConsume = checkDBresult(value[0]["amount"]);
+      });
+    });
+    var previousDay = getPreviousDayRange();
+    DB()
+        .timeStatistics(
+            Transaction.consume.value, previousDay[0], previousDay[1])
+        .then((value) {
+      setState(() {
+        previousDayConsume = checkDBresult(value[0]["amount"]);
+      });
     });
   }
 
@@ -113,7 +131,7 @@ class AccountWidgetState extends State<AccountWidget>
       for (var e in value) {
         total = total + e['value'];
       }
-      var initialOffset = 0.3;
+      var initialOffset = 0.2;
       for (var e in value) {
         Color color = getRandomColor();
         colorAndName.add({
@@ -128,7 +146,7 @@ class AccountWidgetState extends State<AccountWidget>
         if (percent <= 0.02) {
           offset = initialOffset;
           if (initialOffset <= 0.9) {
-            initialOffset = initialOffset + 0.2;
+            initialOffset = initialOffset + 0.35;
           }
         }
         pieChartSections.add(PieChartSectionData(
@@ -327,25 +345,38 @@ class AccountWidgetState extends State<AccountWidget>
   }
 
   Widget statistics() {
+    double deviceHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       body: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           Wrap(
               spacing: 5.0, // 水平方向的间距
               runSpacing: 2.0, // 垂直方向的间距
               children: [
-                Text("总资产： $totalAssets"),
-                Text("总负债： ${0 - totalDebts}"),
-                Text("净资产： ${totalAssets + totalDebts}"),
-                Text("本月支出： $currentlyMonthConsume"),
-                Text("本月收入： $currentlyMonthIncome"),
-                Text(
-                    "本月总计： ${(currentlyMonthIncome - currentlyMonthConsume).toStringAsFixed(1)}"),
-                Text("上月支出： $previousMonthConsume"),
-                Text("上月收入： $previousMonthIncome"),
+                if (totalAssets != 0.0) Text("总资产： $totalAssets"),
+                if (totalDebts != 0.0) Text("总负债： ${0 - totalDebts}"),
+                if ((totalAssets + totalDebts) != 0.0)
+                  Text("净资产： ${(totalAssets + totalDebts).toStringAsFixed(2)}"),
+                if (previousMonthConsume != 0.0)
+                  Text("上月支出： $previousMonthConsume"),
+                if (previousMonthIncome != 0.0)
+                  Text("上月收支： $previousMonthIncome"),
+                if (currentlyMonthConsume != 0.0)
+                  Text("本月支出： $currentlyMonthConsume"),
+                if (currentlyMonthIncome != 0.0)
+                  Text("本月收入： $currentlyMonthIncome"),
+                if ((currentlyMonthIncome - currentlyMonthConsume) != 0.0)
+                  Text(
+                      "本月总计： ${(currentlyMonthIncome - currentlyMonthConsume).toStringAsFixed(2)}"),
+                if (previousDayConsume != 0.0)
+                  Text("昨日支出： $previousDayConsume"),
+                if (currentlyDayConsume != 0.0)
+                  Text("今日支出： $currentlyDayConsume"),
               ]),
           SizedBox(
-            height: 300,
+            height: deviceHeight*0.37,
             child: PieChart(
                 PieChartData(centerSpaceRadius: 0, sections: pieChartSections)),
           ),

@@ -47,6 +47,7 @@ class Global {
   static Config? config;
   // 是否跳过Loading页
   static bool jumpLoad = false;
+  static Map notificationTime = {"hour": 11, "minute": 0, "second": 0};
 
   static String aSdCard = "/sdcard/Download/";
   static late String externalStorageDirectory;
@@ -60,6 +61,4 @@ class Global {
       jumpLoad = true;
     }
   }
-
 }
-
