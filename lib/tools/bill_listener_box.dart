@@ -14,7 +14,6 @@ class BillListenerBox {
   }
 
   Future<Box> _initialize() async {
-    await Hive.initFlutter();
     return await Hive.openBox('bill_listener');
   }
 
