@@ -8,8 +8,10 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../tools/bill_listener_service.dart';
 import '../tools/config.dart';
+import '../tools/config_service.dart';
 import '../tools/notification_service.dart';
 import '../tools/tools.dart';
+import '../tools/workmanager_tool.dart';
 import 'account.dart';
 import 'add.dart';
 import 'statement.dart';
@@ -104,36 +106,6 @@ class BottomNavigationWidgetState extends State<BottomNavigationWidget>
       child: Scaffold(
         appBar: AppBar(
           title: Text(titles[_currentIndex]),
-          /*actions: [
-          Builder(
-            builder: (context) {
-              return IconButton(
-                onPressed: () {
-                  //会从context的父类开始找组件context.findAncestorStateOfType
-                  //当前组件的context父组件是 MyApp 是没有 Scaffold，且没有drawer,因此无法打开
-                  //Builder是一个StatelessWidget基础组件，只不过返回了自己的context，因此没问题
-                  Scaffold.of(context).openDrawer();
-                  //Scaffold.of(context).closeDrawer(); //关闭侧边栏
-                  // Scaffold.of(context).openEndDrawer();//打开右侧侧边栏
-                },
-                icon: const Icon(Icons.table_rows_rounded),
-                iconSize: 20,
-              );
-            },
-          ),
-        ],*/
-          /*actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              // Handle the configuration button press
-              //Navigator.of(context)
-              //    .pushNamed('/manage')
-              //    .then((value) => {});
-              Scaffold.of(context).openDrawer();
-            },
-          ),
-        ],*/
         ),
         endDrawer: Drawer(
           // Add a ListView to the drawer. This ensures the user can scroll
@@ -184,15 +156,32 @@ class BottomNavigationWidgetState extends State<BottomNavigationWidget>
                   var sourceFile = File(Global.config!.path);
                   try {
                     await sourceFile.copy(targetFile.path);
+                    var password = await ConfigService().getDBPassword();
                     if (context.mounted) {
-                      Navigator.of(context).pop();
-                      showNoticeSnackBar(context, '已导出到：${targetFile.path}');
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            content:
+                                Text('已导出到：${targetFile.path}\n账本密码：$password'),
+                            actions: <Widget>[
+                              TextButton(
+                                onPressed: () async {
+                                  Navigator.of(context).pop(); // 关闭对话框
+                                  Navigator.of(context).pop(); // 关闭drawer
+                                },
+                                child: const Text('确定'),
+                              ),
+                            ],
+                          );
+                        },
+                      );
                     }
                   } catch (e) {
-                    //print(e);
+                    debugPrint("导出错误：$e");
                     if (context.mounted) {
                       Navigator.of(context).pop();
-                      showNoticeSnackBar(context, '已导出到：${targetFile.path}');
+                      showNoticeSnackBar(context, '导出失败');
                     }
                   }
                 },

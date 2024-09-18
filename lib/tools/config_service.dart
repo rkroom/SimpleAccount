@@ -1,4 +1,9 @@
-import 'package:hive/hive.dart';
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:simple_account/tools/config.dart';
 
 import 'entity.dart';
 
@@ -18,7 +23,26 @@ class ConfigService {
 
   // 初始化 Hive Box
   Future<Box> _initialize() async {
-    return await Hive.openBox('config');
+    if (Global.config == null) {
+      await Hive.initFlutter();
+    }
+
+    const FlutterSecureStorage storage = FlutterSecureStorage();
+
+    const key = 'KEY';
+    var existingValue = await storage.read(key: key);
+    List<int>? keyValue;
+    if (existingValue != null) {
+      keyValue = base64Decode(existingValue);
+    } else {
+      // 如果不存在，随机生成
+      keyValue = List.generate(32, (_) => Random.secure().nextInt(256));
+      var encodedValue = base64Encode(keyValue);
+      await storage.write(key: key, value: encodedValue);
+    }
+
+    return await Hive.openBox('config',
+        encryptionCipher: HiveAesCipher(keyValue));
   }
 
   // 获取数据库路径

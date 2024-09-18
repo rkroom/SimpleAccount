@@ -4,22 +4,41 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:sqflite_sqlcipher/sqflite.dart';
 
 import 'config.dart';
+import 'config_service.dart';
 import 'entity.dart';
 import 'tools.dart';
 
 class DB {
+  // 单例模式
   static final DB _singleton = DB._internal();
-
-  factory DB() {
-    return _singleton;
-  }
-
+  factory DB() => _singleton;
   DB._internal();
 
   static Database? _database;
+  static Future<Database>? _databaseFuture;
 
-  Future<Database> get database async =>
-      _database ??= await _initDB(Global.config!.path, Global.config!.password);
+  Future<Database> get database async {
+    // 如果已经初始化，直接返回数据库实例
+    if (_database != null) {
+      return _database!;
+    }
+
+    // 如果正在初始化，等待初始化完成
+    if (_databaseFuture != null) {
+      return await _databaseFuture!;
+    }
+
+    // 获取数据库路径并开始初始化
+    final path = await ConfigService().getDBPath();
+    final password = await ConfigService().getDBPassword();
+    _databaseFuture = _initDB(path, password);
+
+    // 等待初始化完成后缓存实例并清理 Future
+    _database = await _databaseFuture!;
+    _databaseFuture = null;
+
+    return _database!;
+  }
 
   Future<Database> _initDB(path, password) async {
     return await openDatabase(path,
@@ -48,7 +67,8 @@ class DB {
       WHERE when_time > ?
       AND flow = ?
       GROUP BY date
-      ORDER BY date""", [cmd[0], "consume"]);
+      ORDER BY date
+      DESC""", [cmd[0], "consume"]);
   }
 
   //根据时间获取最常出现类目
@@ -259,7 +279,7 @@ JOIN TopValues t on a.id = t.account_info_id""",
   }
 
   //测试数据库文件
-  Future checkDBfile(String path, String password) async {
+  Future<bool> checkDBfile(String path, String password) async {
     try {
       await openDatabase(path, password: password);
       return true;
@@ -269,10 +289,23 @@ JOIN TopValues t on a.id = t.account_info_id""",
   }
 
   //修改数据库文件
-  Future changeDBfile(String path, String password) async {
-    _database = await _initDB(path, password);
+  Future<bool> changeDBfile(String path, String password) async {
+    await closeDB();
+    _databaseFuture = _initDB(path, password);
     Global.config = Config(path, password);
-    return _database!.isOpen;
+    _database = await _databaseFuture!;
+    _databaseFuture = null;
+    return _database?.isOpen ?? false;
+  }
+
+  //关闭数据库
+  Future<void> closeDB() async {
+    if (_database != null) {
+    await _database!.close();
+    //关闭时需要将database实例设置为null，否则将返回旧实例。
+    _database = null;
+    _databaseFuture = null;
+    }
   }
 
   //创建数据库
