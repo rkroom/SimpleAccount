@@ -22,9 +22,7 @@ class Global {
   static Future init() async {
     externalStorageDirectory = (await getExternalStorageDirectory())!.path;
     config = await ConfigService().getConfig();
-    if (config == null) {
-      jumpLoad = false;
-    } else {
+    if (config != null) {
       jumpLoad = true;
     }
   }

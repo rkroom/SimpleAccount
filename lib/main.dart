@@ -1,11 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:workmanager/workmanager.dart';
 
 import 'tools/bill_listener_service.dart';
 import 'tools/config.dart';
+import 'tools/native_method_channel.dart';
 import 'tools/routes.dart';
 import 'tools/workmanager_tool.dart';
 
@@ -17,9 +17,6 @@ void main() async {
   //ConfigService会在不同的isolate中运行，为避免重复初始化 Hive.initFlutter需要在 Global.init 之前运行
   await Hive.initFlutter();
 
-  //开启MethodChannel
-  const platform = MethodChannel('notification_listener');
-
   //初始化Workmanager
   await Workmanager().initialize(
     callbackDispatcher,
@@ -29,7 +26,7 @@ void main() async {
   // 初始化数据之后再加载UI，以及账单监听服务
   await Global.init();
   var hasPermission =
-      await platform.invokeMethod('checkNotificationPermission');
+      await  NativeMethodChannel.instance.checkNotificationListenerPermission();
 
   if (hasPermission) {
     await BillListenerService().startBillListenerService();

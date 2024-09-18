@@ -2,6 +2,8 @@ import 'package:flutter/services.dart';
 
 import 'bill_listener_box.dart';
 import 'event_bus.dart';
+import 'native_method_channel.dart';
+import 'tools.dart';
 
 class BillListenerService {
   // 单例实例
@@ -27,18 +29,18 @@ class BillListenerService {
 
   bool _isInitialized = false;
 
-  late MethodChannel platform;
+  late List accounts;
 
   Future<void> init() async {
     if (!_isInitialized) {
-      platform = const MethodChannel('notification_listener');
+      accounts = await getAccount();
       _isInitialized = true;
     }
   }
 
   Future<void> startBillListenerService() async {
     await init();
-    platform.setMethodCallHandler(_handleMethodCall);
+    NativeMethodChannel.instance.setMethodCallHandler(_handleMethodCall);
   }
 
   Future<void> _handleMethodCall(MethodCall call) async {

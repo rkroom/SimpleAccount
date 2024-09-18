@@ -6,6 +6,7 @@ import 'package:flutter_picker_plus/flutter_picker_plus.dart';
 
 import '../tools/db.dart';
 import '../tools/event_bus.dart';
+import '../tools/native_method_channel.dart';
 import '../tools/tools.dart';
 import '../tools/config_enum.dart';
 import '../widgets/quick_select.dart';
@@ -22,7 +23,6 @@ class AddWidget extends StatefulWidget {
 class AddWidgetState extends State<AddWidget>
     with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
   static const TextScaler customTextScaler = TextScaler.linear(1.2);
-  static const platform = MethodChannel('notification_listener');
   bool _hasPermission = false;
 
   @override
@@ -118,7 +118,7 @@ class AddWidgetState extends State<AddWidget>
         });
       });
     });
-    platform.invokeMethod("checkNotificationPermission").then((hasPermission) {
+    NativeMethodChannel.instance.checkNotificationListenerPermission().then((hasPermission) {
       setState(() {
         _hasPermission = hasPermission;
       });

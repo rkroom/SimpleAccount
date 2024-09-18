@@ -9,6 +9,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../tools/bill_listener_service.dart';
 import '../tools/config.dart';
 import '../tools/config_service.dart';
+import '../tools/native_method_channel.dart';
 import '../tools/notification_service.dart';
 import '../tools/tools.dart';
 import '../tools/workmanager_tool.dart';
@@ -27,7 +28,7 @@ class BottomNavigationWidget extends StatefulWidget {
 
 class BottomNavigationWidgetState extends State<BottomNavigationWidget>
     with WidgetsBindingObserver {
-  MethodChannel platform = const MethodChannel('notification_listener');
+
   Key _childKey = UniqueKey();
 
   // 设定进入时显示的模块
@@ -65,7 +66,7 @@ class BottomNavigationWidgetState extends State<BottomNavigationWidget>
     if (state == AppLifecycleState.resumed && _isReturningFromSettings) {
       // 检查权限状态
       final bool hasPermission =
-          await platform.invokeMethod('checkNotificationPermission');
+          await NativeMethodChannel.instance.checkNotificationListenerPermission();
       if (hasPermission) {
         //有权限时，启动监听服务
         await BillListenerService().startBillListenerService();
@@ -98,7 +99,7 @@ class BottomNavigationWidgetState extends State<BottomNavigationWidget>
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
-        await platform.invokeMethod('minimizeApp');
+        await NativeMethodChannel.instance.minimizeApp();
       },
       /*
     返回一个脚手架，里面包含两个属性，一个是底部导航栏，另一个就是主体内容
@@ -200,8 +201,7 @@ class BottomNavigationWidgetState extends State<BottomNavigationWidget>
                   title: const Text('账单记录'),
                   onTap: () async {
                     try {
-                      final bool hasPermission = await platform
-                          .invokeMethod('checkNotificationPermission');
+                      final bool hasPermission = await NativeMethodChannel.instance.checkNotificationListenerPermission();
                       if (hasPermission) {
                         if (context.mounted) {
                           Navigator.of(context).pop();
@@ -229,8 +229,7 @@ class BottomNavigationWidgetState extends State<BottomNavigationWidget>
                                       Navigator.of(context).pop(); // 关闭对话框
                                       Navigator.of(context).pop(); // 关闭drawer
                                       try {
-                                        await platform.invokeMethod(
-                                            'requestNotificationPermission');
+                                        await NativeMethodChannel.instance.requestNotificationListenerPermission();
                                         _isReturningFromSettings = true;
                                       } on PlatformException catch (e) {
                                         debugPrint(
