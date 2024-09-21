@@ -3,7 +3,9 @@ plugins {
     id "kotlin-android"
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id "dev.flutter.flutter-gradle-plugin"
+    id "org.jetbrains.kotlin.plugin.serialization"
 }
+
 android {
     namespace = "com.rkroom.simple_account"
     compileSdk = flutter.compileSdkVersion
@@ -36,6 +38,9 @@ android {
             signingConfig = signingConfigs.debug
         }
     }
+}
+dependencies {
+    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1'
 }
 flutter {
     source = "../.."

@@ -14,6 +14,11 @@ class NativeMethodChannel {
   // MethodChannel 通道名，保证唯一
   static const MethodChannel _channel = MethodChannel('notification_listener');
 
+  void setMethodCallHandler(
+      Future<dynamic> Function(MethodCall call)? handler) {
+    _channel.setMethodCallHandler(handler);
+  }
+
   // 调用原生方法
   Future<bool> checkNotificationListenerPermission() async {
     return await _channel.invokeMethod('checkNotificationPermission');
@@ -27,8 +32,16 @@ class NativeMethodChannel {
     await _channel.invokeMethod('requestNotificationPermission');
   }
 
-  void setMethodCallHandler(
-      Future<dynamic> Function(MethodCall call)? handler) {
-    _channel.setMethodCallHandler(handler);
+  Future getBills() async {
+    return await _channel.invokeMethod('getBills');
+  }
+
+  Future clearBills() async {
+    final count = await _channel.invokeMethod('clearBills');
+    return count;
+  }
+
+  Future delBill(int index) async {
+    return await _channel.invokeMethod('delBill', {'index': index});
   }
 }

@@ -37,6 +37,23 @@ class MainActivity: FlutterActivity(){
                 "minimizeApp" -> {
                     moveTaskToBack(false)
                 }
+                "getBills" -> {
+                    val sharedPreferencesManager = SharedPreferencesManager.getInstance(this)
+                    result.success(sharedPreferencesManager.getBills())
+                }
+                "clearBills" -> { 
+                    result.success(SharedPreferencesManager.getInstance(this).clearBills())
+                }
+                "delBill" -> {
+                    val index = call.argument<Int>("index")
+                    if (index != null) {
+                        SharedPreferencesManager.getInstance(this).delBill(index)
+                        result.success(true)
+                    } else {
+                        result.error("INVALID_ARGUMENT", "Index is null", false)
+                    }
+                    
+                }
                 else -> result.notImplemented()
             }
         }

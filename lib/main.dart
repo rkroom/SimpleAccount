@@ -3,9 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:workmanager/workmanager.dart';
 
-import 'tools/bill_listener_service.dart';
 import 'tools/config.dart';
-import 'tools/native_method_channel.dart';
 import 'tools/routes.dart';
 import 'tools/workmanager_tool.dart';
 
@@ -25,12 +23,6 @@ void main() async {
 
   // 初始化数据之后再加载UI，以及账单监听服务
   await Global.init();
-  var hasPermission =
-      await  NativeMethodChannel.instance.checkNotificationListenerPermission();
-
-  if (hasPermission) {
-    await BillListenerService().startBillListenerService();
-  }
 
   runApp(const MyApp());
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -6,7 +7,6 @@ import 'package:flutter/services.dart';
 import 'package:path/path.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import '../tools/bill_listener_service.dart';
 import '../tools/config.dart';
 import '../tools/config_service.dart';
 import '../tools/native_method_channel.dart';
@@ -28,7 +28,6 @@ class BottomNavigationWidget extends StatefulWidget {
 
 class BottomNavigationWidgetState extends State<BottomNavigationWidget>
     with WidgetsBindingObserver {
-
   Key _childKey = UniqueKey();
 
   // 设定进入时显示的模块
@@ -40,6 +39,8 @@ class BottomNavigationWidgetState extends State<BottomNavigationWidget>
   List titles = ["添加", "账单", "账户"];
 
   bool _isReturningFromSettings = false;
+  //定时器，应用进入后台后一定时间内未被再次打开则彻底退出应用。
+  Timer? _exitTimer;
 
   @override
 //initState是初始化函数，在绘制底部导航控件的时候就把这3个页面添加到list里面用于下面跟随标签导航进行切换显示
@@ -56,6 +57,14 @@ class BottomNavigationWidgetState extends State<BottomNavigationWidget>
       const AccountWidget()
     ];
     scheduleDailyTask();
+    if (kDebugMode) {
+      NativeMethodChannel.instance
+          .setMethodCallHandler((MethodCall call) async {
+        if (call.method == 'flutterPrint') {
+          debugPrint(call.arguments);
+        }
+      });
+    }
   }
 
   @override
@@ -65,11 +74,9 @@ class BottomNavigationWidgetState extends State<BottomNavigationWidget>
     // 当应用恢复到前台时
     if (state == AppLifecycleState.resumed && _isReturningFromSettings) {
       // 检查权限状态
-      final bool hasPermission =
-          await NativeMethodChannel.instance.checkNotificationListenerPermission();
+      final bool hasPermission = await NativeMethodChannel.instance
+          .checkNotificationListenerPermission();
       if (hasPermission) {
-        //有权限时，启动监听服务
-        await BillListenerService().startBillListenerService();
         //刷新组件以显示按钮
         setState(() {
           _childKey = UniqueKey();
@@ -86,11 +93,19 @@ class BottomNavigationWidgetState extends State<BottomNavigationWidget>
       // 重置标志位，确保只检查一次
       _isReturningFromSettings = false;
     }
+
+    if (state == AppLifecycleState.resumed) {
+      // 用户重新回到应用时，取消定时器
+      if (_exitTimer != null && _exitTimer!.isActive) {
+        _exitTimer!.cancel();
+      }
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _exitTimer?.cancel();
     super.dispose();
   }
 
@@ -99,6 +114,17 @@ class BottomNavigationWidgetState extends State<BottomNavigationWidget>
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        if (!Platform.isAndroid) {
+          SystemNavigator.pop();
+        }
+        if (_exitTimer != null && _exitTimer!.isActive) {
+          _exitTimer!.cancel();
+        }
+        _exitTimer = Timer(const Duration(minutes: 5), () {
+          // 超过五分钟未返回应用，彻底退出应用
+          SystemNavigator.pop();
+        });
         await NativeMethodChannel.instance.minimizeApp();
       },
       /*
@@ -201,7 +227,9 @@ class BottomNavigationWidgetState extends State<BottomNavigationWidget>
                   title: const Text('账单记录'),
                   onTap: () async {
                     try {
-                      final bool hasPermission = await NativeMethodChannel.instance.checkNotificationListenerPermission();
+                      final bool hasPermission = await NativeMethodChannel
+                          .instance
+                          .checkNotificationListenerPermission();
                       if (hasPermission) {
                         if (context.mounted) {
                           Navigator.of(context).pop();
@@ -229,7 +257,8 @@ class BottomNavigationWidgetState extends State<BottomNavigationWidget>
                                       Navigator.of(context).pop(); // 关闭对话框
                                       Navigator.of(context).pop(); // 关闭drawer
                                       try {
-                                        await NativeMethodChannel.instance.requestNotificationListenerPermission();
+                                        await NativeMethodChannel.instance
+                                            .requestNotificationListenerPermission();
                                         _isReturningFromSettings = true;
                                       } on PlatformException catch (e) {
                                         debugPrint(

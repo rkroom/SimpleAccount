@@ -1,9 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-import '../tools/bill_listener_box.dart';
 import '../tools/bill_listener_service.dart';
 import '../tools/event_bus.dart';
+import '../tools/native_method_channel.dart';
 import '../tools/tools.dart';
 import '../tools/config_enum.dart';
 import '../widgets/transactions.dart';
@@ -26,49 +27,28 @@ class BillListenerWidgetState extends State<BillListenerWidget> {
   @override
   void initState() {
     super.initState();
-
-    if (kDebugMode) {
-      notifications = [
-        {
-          "detailed": "1",
-          "account": null,
-          "comment": '',
-          "time": DateTime.now(),
-          "consumeAccountText": "请选择",
-          "selectedCategory": null,
-          "consumeCategoryText": "请选择",
-          "categoryId": null,
-        },
-        {
-          "detailed": "2",
-          "account": null,
-          "time": DateTime.now(),
-          "consumeAccountText": "请选择",
-          "selectedCategory": null,
-          "consumeCategoryText": "请选择",
-          "categoryId": null,
-        },
-        {
-          "detailed": "3",
-          "account": null,
-          "time": DateTime.now(),
-          "consumeAccountText": "请选择",
-          "selectedCategory": null,
-          "consumeCategoryText": "请选择",
-          "categoryId": null,
-        },
-      ];
-    }
-
-    if (!kDebugMode) {
-      BillListenerBox().getBills().then(
-            (value) => {
-              setState(() {
-                notifications = value;
-              })
-            },
-          );
-    }
+    BillListenerService().getBills().then((value) {
+      setState(() {
+        notifications = value;
+      });
+      NativeMethodChannel.instance
+          .setMethodCallHandler((MethodCall call) async {
+        if (call.method == 'flutterPrint') {
+          debugPrint(call.arguments);
+          return;
+        }
+        if (call.method != 'onNotificationPosted') return;
+        final String packageName = call.arguments['packageName'];
+        final String content = call.arguments['content'];
+        final String title = call.arguments['title'];
+        final int postTime = call.arguments['postTime'];
+        var bill = BillListenerService()
+            .convertToBill(packageName, content, title, postTime);
+        setState(() {
+          notifications.add(bill);
+        });
+      });
+    });
 
     // 初始化账户信息
     getAccount().then((list) {
@@ -81,18 +61,25 @@ class BillListenerWidgetState extends State<BillListenerWidget> {
         categories = list;
       });
     });
+  }
 
-    bus.on("bill_listener", (bill) {
-      setState(() {
-        notifications.add(bill);
+  @override
+  void dispose() {
+    super.dispose();
+    if (kDebugMode) {
+      NativeMethodChannel.instance
+          .setMethodCallHandler((MethodCall call) async {
+        if (call.method == 'flutterPrint') {
+          debugPrint(call.arguments);
+        }
       });
-    });
+    } else {
+      NativeMethodChannel.instance.setMethodCallHandler(null);
+    }
   }
 
   void _clearNotifications() async {
-    if (!kDebugMode) {
-      await BillListenerService().clearBillListenerBox();
-    }
+    await BillListenerService().clearBillListenerBox();
     setState(() {
       notifications = [];
     });
@@ -157,18 +144,14 @@ class BillListenerWidgetState extends State<BillListenerWidget> {
                       categoryIndex: categories[1],
                       time: notifications[index]["time"],
                       accountId: notifications[index]["account"],
-                      accountText: notifications[index]
-                          ["consumeAccountText"],
+                      accountText: notifications[index]["consumeAccountText"],
                       selectedCategory: notifications[index]
                           ["selectedCategory"],
-                      categoryText: notifications[index]
-                          ["consumeCategoryText"],
+                      categoryText: notifications[index]["consumeCategoryText"],
                       categoryId: notifications[index]["categoryId"],
-                      addSuccess: (success)async {
+                      addSuccess: (success) async {
                         if (success) {
-                          if (!kDebugMode) {
-                            await BillListenerService().delBill(index);
-                          }
+                          await BillListenerService().delBill(index);
                           bus.emit("add_bill_success");
                           setState(() {
                             notifications.removeAt(index);
@@ -201,9 +184,7 @@ class BillListenerWidgetState extends State<BillListenerWidget> {
                       child: IconButton(
                         icon: const Icon(Icons.delete),
                         onPressed: () async {
-                          if (!kDebugMode) {
-                            await BillListenerService().delBill(index);
-                          }
+                          await BillListenerService().delBill(index);
                           setState(() {
                             notifications.removeAt(index);
                           });

@@ -1,7 +1,5 @@
-import 'package:flutter/services.dart';
+import 'dart:convert';
 
-import 'bill_listener_box.dart';
-import 'event_bus.dart';
 import 'native_method_channel.dart';
 import 'tools.dart';
 
@@ -10,61 +8,62 @@ class BillListenerService {
   static final BillListenerService _instance = BillListenerService._internal();
 
   // 私有构造函数
-  BillListenerService._internal();
+  BillListenerService._internal() {
+    init();
+  }
 
   // 提供静态的实例获取方法
   factory BillListenerService() {
     return _instance;
   }
 
-//RegExp regExp = RegExp(r"(\d+(\.\d{1,2})?)");
   static RegExp regExp = RegExp(r"(\d+\.\d{2})");
-  // 需要处理的包名
-  static const List<String> allowPackageName = [
-    'com.eg.android.AlipayGphone',
-    'com.tencent.mm'
-  ];
-  // 关键字
-  static const List<String> allowKeywords = ['交易', '支付'];
-
-  bool _isInitialized = false;
 
   late List accounts;
 
   Future<void> init() async {
-    if (!_isInitialized) {
-      accounts = await getAccount();
-      _isInitialized = true;
+    accounts = await getAccount();
+  }
+
+  Future<void> clearBillListenerBox() async {
+    await NativeMethodChannel.instance.clearBills();
+  }
+
+  Future<void> delBill(int index) async {
+    await NativeMethodChannel.instance.delBill(index);
+  }
+
+  Future<List> getBills() async {
+    List billsNotification = await NativeMethodChannel.instance.getBills();
+    List bills = [];
+    for (var notification in billsNotification) {
+      bills.add(handlerBillString(notification));
     }
+
+    return bills;
   }
 
-  Future<void> startBillListenerService() async {
-    await init();
-    NativeMethodChannel.instance.setMethodCallHandler(_handleMethodCall);
-  }
-
-  Future<void> _handleMethodCall(MethodCall call) async {
-    // 检查是否是需要处理的调用方法
-    if (call.method != 'onNotificationPosted') return;
-
+  Map? handlerBillString(String notificationString) {
+    Map<String, dynamic> notification = jsonDecode(notificationString);
     // 提取参数
-    final packageName = call.arguments['packageName'];
-    final content = call.arguments['content'];
-    final title = call.arguments['title'];
-    final postTime = call.arguments['postTime'];
+    final String packageName = notification['packageName'];
+    final String content = notification['content'];
+    final String title = notification['title'];
+    final int postTime = notification['postTime'];
+    return convertToBill(packageName, content, title, postTime);
+  }
 
-    if (!allowPackageName.contains(packageName)) return;
-    if (!allowKeywords.any((str) => title.contains(str))) return;
+  Map? convertToBill(
+      String packageName, String content, String title, int postTime) {
 
     // 匹配正则表达式
     final RegExpMatch? match = regExp.firstMatch(content);
-    if (match == null) return;
 
     int? account;
     String consumeAccountText = "请选择";
 
     final bill = {
-      "detailed": match.group(0),
+      "detailed": match?.group(0),
       "account": account,
       "time": DateTime.fromMillisecondsSinceEpoch(postTime),
       "consumeAccountText": consumeAccountText,
@@ -72,17 +71,6 @@ class BillListenerService {
       "consumeCategoryText": "请选择",
       "categoryId": null,
     };
-
-    // 添加账单并发送事件
-    await BillListenerBox().addBill(bill);
-    bus.emit("bill_listener", bill);
-  }
-
-  Future<void> clearBillListenerBox() async {
-    await BillListenerBox().clearBills();
-  }
-
-  Future<void> delBill(int index) async {
-    await BillListenerBox().delBill(index);
+    return bill;
   }
 }
