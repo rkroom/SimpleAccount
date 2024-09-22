@@ -1,10 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../tools/bill_listener_service.dart';
 import '../tools/event_bus.dart';
-import '../tools/native_method_channel.dart';
 import '../tools/tools.dart';
 import '../tools/config_enum.dart';
 import '../widgets/transactions.dart';
@@ -19,7 +16,8 @@ class BillListenerWidget extends StatefulWidget {
   }
 }
 
-class BillListenerWidgetState extends State<BillListenerWidget> {
+class BillListenerWidgetState extends State<BillListenerWidget>
+    with WidgetsBindingObserver {
   List notifications = [];
   List accounts = [];
   List categories = [];
@@ -27,26 +25,10 @@ class BillListenerWidgetState extends State<BillListenerWidget> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     BillListenerService().getBills().then((value) {
       setState(() {
         notifications = value;
-      });
-      NativeMethodChannel.instance
-          .setMethodCallHandler((MethodCall call) async {
-        if (call.method == 'flutterPrint') {
-          debugPrint(call.arguments);
-          return;
-        }
-        if (call.method != 'onNotificationPosted') return;
-        final String packageName = call.arguments['packageName'];
-        final String content = call.arguments['content'];
-        final String title = call.arguments['title'];
-        final int postTime = call.arguments['postTime'];
-        var bill = BillListenerService()
-            .convertToBill(packageName, content, title, postTime);
-        setState(() {
-          notifications.add(bill);
-        });
       });
     });
 
@@ -56,7 +38,7 @@ class BillListenerWidgetState extends State<BillListenerWidget> {
         accounts = list;
       });
     });
-    getCategory("consume").then((list) {
+    getCategory(Transaction.consume.value).then((list) {
       setState(() {
         categories = list;
       });
@@ -66,15 +48,22 @@ class BillListenerWidgetState extends State<BillListenerWidget> {
   @override
   void dispose() {
     super.dispose();
-    if (kDebugMode) {
-      NativeMethodChannel.instance
-          .setMethodCallHandler((MethodCall call) async {
-        if (call.method == 'flutterPrint') {
-          debugPrint(call.arguments);
+    WidgetsBinding.instance.removeObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    super.didChangeAppLifecycleState(state);
+    // 重新回到应用时检测
+    // 仅处理 resumed 状态
+    if (state == AppLifecycleState.resumed) {
+      BillListenerService().getBills().then((value) {
+        if (notifications != value) {
+          setState(() {
+            notifications = value;
+          });
         }
       });
-    } else {
-      NativeMethodChannel.instance.setMethodCallHandler(null);
     }
   }
 

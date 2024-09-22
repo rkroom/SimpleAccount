@@ -24,7 +24,7 @@ class MyNotificationListenerService : NotificationListenerService() {
         "com.eg.android.AlipayGphone",
         "com.tencent.mm",
     ) 
-    private val allowKeywords = listOf("交易", "支付", )
+    private val allowKeywords = listOf("交易", "支付",)
     private val regExp = Regex("(\\d+\\.\\d{2})")
 
 
@@ -60,12 +60,14 @@ class MyNotificationListenerService : NotificationListenerService() {
         //可以调用MisAppRunning检查应用的运行情况
         //同时设置一个标志位（isSendNotification）,在进入bill_listener时修改其状态，退出时还原状态
         //在两者同时满足的情况下才发送账单
+        /* 
         channel?.invokeMethod("onNotificationPosted", mapOf(
             "title" to title,
             "content" to content,
             "packageName" to packageName,
             "postTime" to postTime,
         ))
+        */
     }
 
     private fun handleNotification(title: String?, content: String?, packageName: String?,postTime: Long?) {

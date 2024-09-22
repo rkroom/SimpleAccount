@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_picker_plus/flutter_picker_plus.dart';
 
-
 import '../tools/db.dart';
 import '../tools/event_bus.dart';
 import '../tools/tools.dart';
-
 
 class ManageWidget extends StatefulWidget {
   const ManageWidget({super.key});
@@ -73,7 +71,7 @@ class ManageWidgetState extends State<ManageWidget> {
       ),
       body: Column(children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             const Text("一级分类："),
             SizedBox(
@@ -83,59 +81,63 @@ class ManageWidgetState extends State<ManageWidget> {
                 controller: _firstCategoryController,
               ),
             ),
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () {
-                // 账户类别
-                Picker(
-                    confirmText: "确认",
-                    cancelText: "取消",
-                    adapter:
-                        PickerDataAdapter<String>(pickerData: categoryTypeFlow),
-                    changeToFirst: true,
-                    hideHeader: false,
-                    onConfirm: (Picker picker, List value) {
-                      setState(() {
-                        // 显示于界面
-                        showCategoryTypeFlow = picker.adapter.text;
-                        // 设置一级账户的类型
-                        selectedCategoryTypeFlow =
-                            categoryTypeFlowMap[picker.getSelectedValues()[0]]!;
-                      });
-                    }).showModal(context);
-              },
-              child: Text("分类类型：$showCategoryTypeFlow"),
-            ),
-            ElevatedButton(
-                //按钮
-                child: const Text("添加"),
-                // 点击按钮事件
-                onPressed: () async {
-                  if (_firstCategoryController.text.isEmpty) {
-                    showNoticeSnackBar(context, "分类名不能为空");
-                    return;
-                  } else {
-                    if (selectedCategoryTypeFlow.isEmpty) {
-                      showNoticeSnackBar(context, "必须选择分类类型");
-                      return;
-                    }
-                    try {
-                      DB().addFirstCategory(_firstCategoryController.text,
-                          selectedCategoryTypeFlow);
-                      _firstCategoryController.clear();
-                      setState(() {
-                        getFirstCategories();
-                      });
-                    } catch (error) {
-                      //print(error)
-                      showNoticeSnackBar(context, "添加失败");
-                    }
-                  }
-                })
           ],
         ),
+        Container(
+          margin: const EdgeInsets.only(top: 10, bottom: 10),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              // 账户类别
+              Picker(
+                  confirmText: "确认",
+                  cancelText: "取消",
+                  adapter:
+                      PickerDataAdapter<String>(pickerData: categoryTypeFlow),
+                  changeToFirst: true,
+                  hideHeader: false,
+                  onConfirm: (Picker picker, List value) {
+                    setState(() {
+                      // 显示于界面
+                      showCategoryTypeFlow = picker.adapter.text;
+                      // 设置一级账户的类型
+                      selectedCategoryTypeFlow =
+                          categoryTypeFlowMap[picker.getSelectedValues()[0]]!;
+                    });
+                  }).showModal(context);
+            },
+            child: Text("分类类型：$showCategoryTypeFlow"),
+          ),
+        ),
+        ElevatedButton(
+            //按钮
+            child: const Text("添加"),
+            // 点击按钮事件
+            onPressed: () async {
+              if (_firstCategoryController.text.isEmpty) {
+                showNoticeSnackBar(context, "分类名不能为空");
+                return;
+              } else {
+                if (selectedCategoryTypeFlow.isEmpty) {
+                  showNoticeSnackBar(context, "必须选择分类类型");
+                  return;
+                }
+                try {
+                  DB().addFirstCategory(
+                      _firstCategoryController.text, selectedCategoryTypeFlow);
+                  _firstCategoryController.clear();
+                  setState(() {
+                    getFirstCategories();
+                  });
+                } catch (error) {
+                  //print(error)
+                  showNoticeSnackBar(context, "添加失败");
+                }
+              }
+            }),
+        const Divider(),
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             const Text("二级分类："),
             SizedBox(
@@ -145,33 +147,33 @@ class ManageWidgetState extends State<ManageWidget> {
                 controller: _specificgoryController,
               ),
             ),
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () {
-                // 账户类别
-                Picker(
-                    confirmText: "确认",
-                    cancelText: "取消",
-                    adapter: PickerDataAdapter<String>(
-                        pickerData: firstCategoryName),
-                    changeToFirst: true,
-                    hideHeader: false,
-                    onConfirm: (Picker picker, List value) {
-                      setState(() {
-                        // 显示于界面
-                        showFirstCategory = picker.adapter.text;
-                        // 设置一级账户的ID
-                        selectedFirstCategory = firstCategoryNameAndID[
-                            picker.getSelectedValues()[0]]!;
-                      });
-                    }).showModal(context);
-              },
-              child: Text("一级分类：$showFirstCategory"),
-            ),
-            const SizedBox(
-              width: 50,
-            )
           ],
+        ),
+        Container(
+          margin: const EdgeInsets.only(top: 10, bottom: 10),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              // 账户类别
+              Picker(
+                  confirmText: "确认",
+                  cancelText: "取消",
+                  adapter:
+                      PickerDataAdapter<String>(pickerData: firstCategoryName),
+                  changeToFirst: true,
+                  hideHeader: false,
+                  onConfirm: (Picker picker, List value) {
+                    setState(() {
+                      // 显示于界面
+                      showFirstCategory = picker.adapter.text;
+                      // 设置一级账户的ID
+                      selectedFirstCategory = firstCategoryNameAndID[
+                          picker.getSelectedValues()[0]]!;
+                    });
+                  }).showModal(context);
+            },
+            child: Text("一级分类：$showFirstCategory"),
+          ),
         ),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -202,34 +204,35 @@ class ManageWidgetState extends State<ManageWidget> {
                 })
           ],
         ),
-        Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: <Widget>[
-              const Text("账户名称："),
-              SizedBox(
-                width: 100,
-                child: TextField(
-                  // 通过controller可以调用用户输入的数据
-                  controller: _newAccountNameController,
-                ),
-              ),
-              const Text("初始金额："),
-              SizedBox(
-                width: 100,
-                child: TextField(
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp("[0-9.]")),
-                  ],
-                  keyboardType: TextInputType.number,
-                  // 通过controller可以调用用户输入的数据
-                  controller: _newAccountAmountController,
-                ),
-              )
-            ]),
+        const Divider(),
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
+          const Text("账户名称："),
+          SizedBox(
+            width: 100,
+            child: TextField(
+              // 通过controller可以调用用户输入的数据
+              controller: _newAccountNameController,
+            ),
+          ),
+        ]),
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
+          const Text("初始金额："),
+          SizedBox(
+            width: 100,
+            child: TextField(
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp("[0-9.]")),
+              ],
+              keyboardType: TextInputType.number,
+              // 通过controller可以调用用户输入的数据
+              controller: _newAccountAmountController,
+            ),
+          ),
+        ]),
         Container(
-          margin: const EdgeInsets.only(left: 10, right: 10),
+          margin: const EdgeInsets.only(top: 10, bottom: 10),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
@@ -254,36 +257,34 @@ class ManageWidgetState extends State<ManageWidget> {
                 },
                 child: Text("账户类型：$showSelectedAccountType"),
               ),
-              ElevatedButton(
-                  //按钮
-                  child: const Text("添加"),
-                  // 点击按钮事件
-                  onPressed: () async {
-                    if (_newAccountNameController.text.isEmpty) {
-                      showNoticeSnackBar(context, "账户名不能为空");
-                      return;
-                    } else {
-                      if (selectedAccountType.isEmpty) {
-                        showNoticeSnackBar(context, "必须选择账户类型");
-                        return;
-                      }
-                      try {
-                        DB().addAccount(
-                            _newAccountNameController.text,
-                            _newAccountAmountController.text,
-                            selectedAccountType);
-                        _newAccountNameController.clear();
-                        _newAccountAmountController.text = '0';
-                        bus.emit("update_account");
-                      } catch (error) {
-                        //print(error)
-                        showNoticeSnackBar(context, "添加失败");
-                      }
-                    }
-                  })
             ],
           ),
-        )
+        ),
+        ElevatedButton(
+            //按钮
+            child: const Text("添加"),
+            // 点击按钮事件
+            onPressed: () async {
+              if (_newAccountNameController.text.isEmpty) {
+                showNoticeSnackBar(context, "账户名不能为空");
+                return;
+              } else {
+                if (selectedAccountType.isEmpty) {
+                  showNoticeSnackBar(context, "必须选择账户类型");
+                  return;
+                }
+                try {
+                  DB().addAccount(_newAccountNameController.text,
+                      _newAccountAmountController.text, selectedAccountType);
+                  _newAccountNameController.clear();
+                  _newAccountAmountController.text = '0';
+                  bus.emit("update_account");
+                } catch (error) {
+                  //print(error)
+                  showNoticeSnackBar(context, "添加失败");
+                }
+              }
+            }),
       ]),
     );
   }

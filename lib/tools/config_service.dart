@@ -3,7 +3,6 @@ import 'dart:math';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:simple_account/tools/config.dart';
 
 import 'entity.dart';
 
@@ -23,12 +22,9 @@ class ConfigService {
 
   // 初始化 Hive Box
   Future<Box> _initialize() async {
-    if (Global.config == null) {
-      await Hive.initFlutter();
-    }
+    await Hive.initFlutter();
 
     const FlutterSecureStorage storage = FlutterSecureStorage();
-
     const key = 'KEY';
     var existingValue = await storage.read(key: key);
     List<int>? keyValue;

@@ -49,11 +49,11 @@ class Transactions extends StatefulWidget {
 
   @override
   State<StatefulWidget> createState() {
-    return ConsumeState();
+    return TransactionsState();
   }
 }
 
-class ConsumeState extends State<Transactions> {
+class TransactionsState extends State<Transactions> {
   static const TextScaler customTextScaler = TextScaler.linear(1.2);
 
   late TextEditingController _amountController;

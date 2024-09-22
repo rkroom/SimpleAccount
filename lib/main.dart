@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:workmanager/workmanager.dart';
 
 import 'tools/config.dart';
@@ -10,10 +9,6 @@ import 'tools/workmanager_tool.dart';
 void main() async {
   // 初始化数据之前，需要调用WidgetsFlutterBinding.ensureInitialized();
   WidgetsFlutterBinding.ensureInitialized();
-
-  //初始化Hive
-  //ConfigService会在不同的isolate中运行，为避免重复初始化 Hive.initFlutter需要在 Global.init 之前运行
-  await Hive.initFlutter();
 
   //初始化Workmanager
   await Workmanager().initialize(
