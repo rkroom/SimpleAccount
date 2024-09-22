@@ -51,12 +51,12 @@ class AccountWidgetState extends State<AccountWidget>
 
   void getStatistics() {
     DB().totalBalance('asset').then((value) {
-      totalAssets = checkDBresult(value[0]["balance"]);
+      totalAssets = checkDBResult(value[0]["balance"]);
       setState(() {});
     });
 
     DB().totalBalance('debt').then((value) {
-      totalDebts = checkDBresult(value[0]["balance"]);
+      totalDebts = checkDBResult(value[0]["balance"]);
       setState(() {});
     });
 
@@ -65,12 +65,12 @@ class AccountWidgetState extends State<AccountWidget>
         .timeStatistics(Transaction.consume.value, cmd[0], cmd[1])
         .then((value) {
       setState(() {
-        currentlyMonthConsume = checkDBresult(value[0]["amount"]);
+        currentlyMonthConsume = checkDBResult(value[0]["amount"]);
       });
     });
     DB().timeStatistics(Transaction.income.value, cmd[0], cmd[1]).then((value) {
       setState(() {
-        currentlyMonthIncome = checkDBresult(value[0]["amount"]);
+        currentlyMonthIncome = checkDBResult(value[0]["amount"]);
       });
     });
     var pmd = previousMonthDays();
@@ -78,12 +78,12 @@ class AccountWidgetState extends State<AccountWidget>
         .timeStatistics(Transaction.consume.value, pmd[0], pmd[1])
         .then((value) {
       setState(() {
-        previousMonthConsume = checkDBresult(value[0]["amount"]);
+        previousMonthConsume = checkDBResult(value[0]["amount"]);
       });
     });
     DB().timeStatistics(Transaction.income.value, pmd[0], pmd[1]).then((value) {
       setState(() {
-        previousMonthIncome = checkDBresult(value[0]["amount"]);
+        previousMonthIncome = checkDBResult(value[0]["amount"]);
       });
     });
     var today = getTodayRange();
@@ -91,7 +91,7 @@ class AccountWidgetState extends State<AccountWidget>
         .timeStatistics(Transaction.consume.value, today[0], today[1])
         .then((value) {
       setState(() {
-        currentlyDayConsume = checkDBresult(value[0]["amount"]);
+        currentlyDayConsume = checkDBResult(value[0]["amount"]);
       });
     });
     var previousDay = getPreviousDayRange();
@@ -100,7 +100,7 @@ class AccountWidgetState extends State<AccountWidget>
             Transaction.consume.value, previousDay[0], previousDay[1])
         .then((value) {
       setState(() {
-        previousDayConsume = checkDBresult(value[0]["amount"]);
+        previousDayConsume = checkDBResult(value[0]["amount"]);
       });
     });
   }

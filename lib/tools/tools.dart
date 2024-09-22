@@ -15,47 +15,33 @@ void showNoticeSnackBar(BuildContext context, String message) {
   ScaffoldMessenger.of(context).showSnackBar(snackBar);
 }
 
+// 日期格式化函数
+String formatDateTime(DateTime dateTime) {
+  return DateFormat('yyyy-MM-dd HH:mm:ss').format(dateTime);
+}
+
 // 获取当前月份
 List<String> currentlyMonthDays() {
-  DateTime date = DateTime.now();
-  int year = date.year;
-  int month = date.month;
-
-  // 使用 DateFormat 格式化月份
-  DateFormat monthFormat = DateFormat('MM');
-  monthFormat.format(DateTime(year, month));
-
-  DateTime lastDayOfCurrentMonth = DateTime(year, month + 1, 0);
-
-  // 使用 DateFormat 格式化日期时间
-  DateFormat dateFormat = DateFormat('yyyy-MM-dd HH:mm:ss');
-
-  // 生成第一天和最后一天的时间字符串
-  String firstDayFormatted =
-      dateFormat.format(DateTime(year, month, 1, 0, 0, 0));
-  String lastDayFormatted = dateFormat
-      .format(DateTime(year, month, lastDayOfCurrentMonth.day, 23, 59, 59));
-  return [firstDayFormatted, lastDayFormatted];
+  DateTime now = DateTime.now();
+  DateTime firstDay = DateTime(now.year, now.month, 1);
+  DateTime lastDay = DateTime(now.year, now.month + 1, 0);
+  return [
+    formatDateTime(firstDay),
+    formatDateTime(
+        DateTime(lastDay.year, lastDay.month, lastDay.day, 23, 59, 59))
+  ];
 }
 
 List<String> previousMonthDays() {
-  DateTime date = DateTime.now();
-  int year = date.year;
-  int month = date.month - 1;
-
-  if (month == 0) {
-    year--;
-    month = 12;
-  }
-
-  // 如果月份是单数位，添加前导0
-  String formattedMonth = month.toString().padLeft(2, '0');
-
-  DateTime lastDayOfPreviousMonth = DateTime(year, month + 1, 0);
-
+  DateTime now = DateTime.now();
+  int month = now.month == 1 ? 12 : now.month - 1;
+  int year = now.month == 1 ? now.year - 1 : now.year;
+  DateTime firstDay = DateTime(year, month, 1);
+  DateTime lastDay = DateTime(year, month + 1, 0);
   return [
-    '$year-$formattedMonth-01 00:00:00',
-    '$year-$formattedMonth-${lastDayOfPreviousMonth.day} 23:59:59',
+    formatDateTime(firstDay),
+    formatDateTime(
+        DateTime(lastDay.year, lastDay.month, lastDay.day, 23, 59, 59))
   ];
 }
 
@@ -72,22 +58,15 @@ String generateRandomString(int length) {
 
 // 查找元素索引的函数
 List<int> findElementIndexes(List<dynamic> data, String targetElement) {
-  List<int> result = [];
   for (int i = 0; i < data.length; i++) {
-    var map = data[i];
-    // 使用传统的 for 循环代替 forEach
-    for (var entry in map.entries) {
-      List<String> list = entry.value;
-      for (int j = 0; j < list.length; j++) {
-        if (list[j] == targetElement) {
-          result.add(i); // 添加外层索引
-          result.add(j); // 添加内层索引
-          return result; // 找到后直接返回结果
-        }
+    for (var entry in data[i].entries) {
+      int j = entry.value.indexOf(targetElement);
+      if (j != -1) {
+        return [i, j];
       }
     }
   }
-  return result; // 如果没有找到元素，返回空列表
+  return [];
 }
 
 // 获取账户信息
@@ -168,97 +147,32 @@ Future getCategory(String flow) async {
   });
 }*/
 
-List<String> getThisWeekRange() {
-  // 获取当前时间
-  DateTime now = DateTime.now();
-
-  // 计算当前日期是星期几 (星期一是1，星期天是7)
-  int dayOfWeek = now.weekday;
-
-  // 计算本周的周一日期
-  DateTime startOfWeek = now.subtract(Duration(days: dayOfWeek - 1));
-
-  // 计算本周的周日日期
-  DateTime endOfWeek = now.add(Duration(days: 7 - dayOfWeek));
-
-  // 设置日期格式
-  DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm:ss');
-
-  // 生成周一 00:00:00 和周日 23:59:59 的日期
-  DateTime startOfWeekStart =
-      DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day, 0, 0, 0);
-  DateTime endOfWeekEnd =
-      DateTime(endOfWeek.year, endOfWeek.month, endOfWeek.day, 23, 59, 59);
-
-  // 格式化日期
-  String startOfWeekStr = formatter.format(startOfWeekStart);
-  String endOfWeekStr = formatter.format(endOfWeekEnd);
-
-  // 返回结果
-  return [startOfWeekStr, endOfWeekStr];
+// 获取指定日期范围
+List<String> getDateRange(DateTime date) {
+  return [
+    formatDateTime(DateTime(date.year, date.month, date.day, 0, 0, 0)),
+    formatDateTime(DateTime(date.year, date.month, date.day, 23, 59, 59))
+  ];
 }
 
-List<String> getPreviousDayRange() {
-  // 获取当前时间
-  DateTime now = DateTime.now();
+List<String> getPreviousDayRange() =>
+    getDateRange(DateTime.now().subtract(const Duration(days: 1)));
 
-  // 获取前一天的日期
-  DateTime previousDay = now.subtract(const Duration(days: 1));
+List<String> getTodayRange() => getDateRange(DateTime.now());
 
-  // 设置日期格式
-  DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm:ss');
-
-  // 生成前一天的开始和结束时间
-  DateTime startOfDay =
-      DateTime(previousDay.year, previousDay.month, previousDay.day, 0, 0, 0);
-  DateTime endOfDay = DateTime(
-      previousDay.year, previousDay.month, previousDay.day, 23, 59, 59);
-
-  // 格式化日期
-  String startOfDayStr = formatter.format(startOfDay);
-  String endOfDayStr = formatter.format(endOfDay);
-
-  // 返回结果
-  return [startOfDayStr, endOfDayStr];
-}
-
-List<String> getTodayRange() {
-  // 获取当前时间
-  DateTime now = DateTime.now();
-
-  // 生成今日的 00:00:00 的日期
-  DateTime startOfDay = DateTime(now.year, now.month, now.day, 0, 0, 0);
-
-  // 设置日期格式
-  DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm:ss');
-
-  // 格式化日期
-  String startOfDayStr = formatter.format(startOfDay);
-  String nowStr = formatter.format(now);
-
-  // 返回结果
-  return [startOfDayStr, nowStr];
-}
-
-double checkDBresult(value) {
-  if (value == null) {
-    return 0;
-  }
-  if (value.isNaN) {
-    return 0;
-  }
-  return value;
+double checkDBResult(double? value) {
+  return (value == null || value.isNaN) ? 0 : value;
 }
 
 Future<Map> periodicStatistics() async {
   var cmd = currentlyMonthDays();
-  var currentlyMonthConsumption = checkDBresult((await DB()
+  var currentlyMonthConsumption = checkDBResult((await DB()
       .timeStatistics(Transaction.consume.value, cmd[0], cmd[1]))[0]["amount"]);
   var today = getTodayRange();
-  var todayConsumption = checkDBresult((await DB().timeStatistics(
+  var todayConsumption = checkDBResult((await DB().timeStatistics(
       Transaction.consume.value, today[0], today[1]))[0]["amount"]);
   var previousDay = getPreviousDayRange();
-  var previousDayConsumption = checkDBresult((await DB().timeStatistics(
+  var previousDayConsumption = checkDBResult((await DB().timeStatistics(
       Transaction.consume.value, previousDay[0], previousDay[1]))[0]["amount"]);
   return {
     "currentlyMonthConsumption": currentlyMonthConsumption,

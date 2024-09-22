@@ -77,6 +77,7 @@ class StatementWidgetState extends State<StatementWidget> {
             ),
             TextButton(
               onPressed: () {
+                DB().deleteBill(item['id']);
                 _pagingController.itemList?.remove(item);
                 //_pagingController.refresh();
                 _pagingController.itemList =
@@ -134,7 +135,6 @@ class StatementWidgetState extends State<StatementWidget> {
                   if (selectedData == item)
                     ElevatedButton(
                       onPressed: () {
-                        DB().deleteBill(item['id']);
                         _showConfirmationDialog(item);
                       },
                       child: const Text('删除'),
