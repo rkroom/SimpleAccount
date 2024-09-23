@@ -31,15 +31,18 @@ class StatisticWidgetState extends State<StatisticWidget> {
   }
 
   @override
-  Widget build(Object context) {
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('本月支出'),
       ),
       body: data.isEmpty
           ? const Center(child: Text('暂无记录'))
-          : TableWidget(
-              data: data,
+          : SingleChildScrollView(
+              scrollDirection: Axis.vertical,
+              child: TableWidget(
+                data: data,
+              ),
             ),
     );
   }
