@@ -68,31 +68,35 @@ class AddWidgetState extends State<AddWidget>
   //添加标志变量，当whenTime修改后一定时间内，应用从后台恢复到前台不修改whenTime
   DateTime timeSign = DateTime.now();
 
+  void initData() async {
+    // 使用 Future.wait 并行执行所有异步任务
+    var results = await Future.wait([
+      getCategory("consume"), // 获取消费分类
+      getCategory("income"), // 获取收入分类
+      getAccount() // 获取账户信息
+    ]);
+
+    // 在所有异步任务完成后，统一更新状态
+    setState(() {
+      // 消费分类
+      consumeCategory = results[0][0];
+      consumeCategoryIndex = results[0][1];
+
+      // 收入分类
+      incomeCategory = results[1][0];
+      incomeCategoryIndex = results[1][1];
+
+      // 账户信息
+      accountName = results[2][0];
+      accountIndex = results[2][1];
+      // accountType = results[2][2];
+    });
+  }
+
   @override
   void initState() {
     super.initState();
-    // 初始化消费分类信息
-    // 在initState方法中不能使用async，这里可以采用.then
-    getCategory("consume").then((list) {
-      setState(() {
-        consumeCategory = list[0];
-        consumeCategoryIndex = list[1];
-      });
-    });
-    // 初始化收入分类信息
-    getCategory("income").then((list) {
-      incomeCategory = list[0];
-      incomeCategoryIndex = list[1];
-    });
-    // 初始化账户信息
-    getAccount().then((list) {
-      setState(() {
-        accountName = list[0];
-        accountIndex = list[1];
-        //accountType = list[2];
-      });
-    });
-
+    initData();
     bus.on("update_category", (arg) {
       getCategory("consume").then((list) {
         setState(() {
@@ -100,7 +104,6 @@ class AddWidgetState extends State<AddWidget>
           consumeCategoryIndex = list[1];
         });
       });
-      // 初始化收入分类信息
       getCategory("income").then((list) {
         setState(() {
           incomeCategory = list[0];
@@ -118,7 +121,9 @@ class AddWidgetState extends State<AddWidget>
         });
       });
     });
-    NativeMethodChannel.instance.checkNotificationListenerPermission().then((hasPermission) {
+    NativeMethodChannel.instance
+        .checkNotificationListenerPermission()
+        .then((hasPermission) {
       setState(() {
         _hasPermission = hasPermission;
       });

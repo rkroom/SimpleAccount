@@ -21,20 +21,20 @@ class QuickSelectState extends State<QuickSelect> {
   List<Map<String, dynamic>> categoryArray = [];
   List<Map<String, dynamic>> accountArray = [];
 
+  void initData() async {
+    final results = await Future.wait([
+      DB().getMostFrequentType("consume"),
+      DB().getMostFrequentAccount("consume")
+    ]);
+    categoryArray = results[0] as List<Map<String, dynamic>>;
+    accountArray = results[1];
+    setState(() {});
+  }
+
   @override
   void initState() {
     super.initState();
-    DB().getMostFrequentType("consume").then((v) {
-      setState(() {
-        categoryArray = v as List<Map<String, dynamic>>;
-      });
-    });
-
-    DB().getMostFrequentAccount("consume").then((v) {
-      setState(() {
-        accountArray = v;
-      });
-    });
+    initData();
   }
 
   @override

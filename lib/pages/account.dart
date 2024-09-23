@@ -49,60 +49,38 @@ class AccountWidgetState extends State<AccountWidget>
   List<PieChartSectionData> pieChartSections = [];
   List<Map> colorAndName = [];
 
-  void getStatistics() {
-    DB().totalBalance('asset').then((value) {
-      totalAssets = checkDBResult(value[0]["balance"]);
-      setState(() {});
-    });
-
-    DB().totalBalance('debt').then((value) {
-      totalDebts = checkDBResult(value[0]["balance"]);
-      setState(() {});
-    });
-
+  void getStatistics() async {
+    // 获取时间区间
     var cmd = currentlyMonthDays();
-    DB()
-        .timeStatistics(Transaction.consume.value, cmd[0], cmd[1])
-        .then((value) {
-      setState(() {
-        currentlyMonthConsume = checkDBResult(value[0]["amount"]);
-      });
-    });
-    DB().timeStatistics(Transaction.income.value, cmd[0], cmd[1]).then((value) {
-      setState(() {
-        currentlyMonthIncome = checkDBResult(value[0]["amount"]);
-      });
-    });
     var pmd = previousMonthDays();
-    DB()
-        .timeStatistics(Transaction.consume.value, pmd[0], pmd[1])
-        .then((value) {
-      setState(() {
-        previousMonthConsume = checkDBResult(value[0]["amount"]);
-      });
-    });
-    DB().timeStatistics(Transaction.income.value, pmd[0], pmd[1]).then((value) {
-      setState(() {
-        previousMonthIncome = checkDBResult(value[0]["amount"]);
-      });
-    });
     var today = getTodayRange();
-    DB()
-        .timeStatistics(Transaction.consume.value, today[0], today[1])
-        .then((value) {
-      setState(() {
-        currentlyDayConsume = checkDBResult(value[0]["amount"]);
-      });
-    });
     var previousDay = getPreviousDayRange();
-    DB()
-        .timeStatistics(
-            Transaction.consume.value, previousDay[0], previousDay[1])
-        .then((value) {
-      setState(() {
-        previousDayConsume = checkDBResult(value[0]["amount"]);
-      });
-    });
+
+    // 并行执行所有数据库操作
+    var results = await Future.wait([
+      DB().totalBalance('asset'),
+      DB().totalBalance('debt'),
+      DB().timeStatistics(Transaction.consume.value, cmd[0], cmd[1]),
+      DB().timeStatistics(Transaction.income.value, cmd[0], cmd[1]),
+      DB().timeStatistics(Transaction.consume.value, pmd[0], pmd[1]),
+      DB().timeStatistics(Transaction.income.value, pmd[0], pmd[1]),
+      DB().timeStatistics(Transaction.consume.value, today[0], today[1]),
+      DB().timeStatistics(
+          Transaction.consume.value, previousDay[0], previousDay[1]),
+    ]);
+
+    // 将结果更新到状态变量
+    totalAssets = checkDBResult(results[0][0]["balance"]);
+    totalDebts = checkDBResult(results[1][0]["balance"]);
+    currentlyMonthConsume = checkDBResult(results[2][0]["amount"]);
+    currentlyMonthIncome = checkDBResult(results[3][0]["amount"]);
+    previousMonthConsume = checkDBResult(results[4][0]["amount"]);
+    previousMonthIncome = checkDBResult(results[5][0]["amount"]);
+    currentlyDayConsume = checkDBResult(results[6][0]["amount"]);
+    previousDayConsume = checkDBResult(results[7][0]["amount"]);
+
+    // 统一调用 setState 更新 UI
+    setState(() {});
   }
 
   Color getRandomColor() {
@@ -158,10 +136,7 @@ class AccountWidgetState extends State<AccountWidget>
         ));
       }
       colorAndName.sort((a, b) => b['amount'].compareTo(a['amount']));
-      setState(() {
-        pieChartSections;
-        colorAndName;
-      });
+      setState(() {});
     });
   }
 
@@ -376,7 +351,7 @@ class AccountWidgetState extends State<AccountWidget>
                   Text("今日支出： $currentlyDayConsume"),
               ]),
           SizedBox(
-            height: deviceHeight*0.37,
+            height: deviceHeight * 0.37,
             child: PieChart(
                 PieChartData(centerSpaceRadius: 0, sections: pieChartSections)),
           ),

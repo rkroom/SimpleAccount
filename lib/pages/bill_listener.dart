@@ -22,27 +22,23 @@ class BillListenerWidgetState extends State<BillListenerWidget>
   List accounts = [];
   List categories = [];
 
+  void initData() async {
+    // 初始化账户信息
+    final results = await Future.wait([
+      getAccount(),
+      getCategory(Transaction.consume.value),
+    ]);
+    accounts = results[0];
+    categories = results[1];
+    notifications = await BillListenerService().getBills();
+    setState(() {});
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    BillListenerService().getBills().then((value) {
-      setState(() {
-        notifications = value;
-      });
-    });
-
-    // 初始化账户信息
-    getAccount().then((list) {
-      setState(() {
-        accounts = list;
-      });
-    });
-    getCategory(Transaction.consume.value).then((list) {
-      setState(() {
-        categories = list;
-      });
-    });
+    initData();
   }
 
   @override
@@ -94,11 +90,6 @@ class BillListenerWidgetState extends State<BillListenerWidget>
 
   @override
   Widget build(BuildContext context) {
-    // 检查 accounts 是否为空
-    if (accounts.isEmpty || categories.isEmpty) {
-      return const CircularProgressIndicator(); // 或者显示加载动画等
-    }
-
     return Scaffold(
         appBar: AppBar(
           title: const Text('账单'),

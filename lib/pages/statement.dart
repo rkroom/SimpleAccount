@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
+import 'package:simple_account/tools/tools.dart';
 
 import '../tools/db.dart';
 import '../tools/event_bus.dart';
@@ -21,7 +22,7 @@ class StatementWidgetState extends State<StatementWidget> {
   final PagingController<int, Map<String, dynamic>> _pagingController =
       PagingController(firstPageKey: 0);
 
-  final DatabaseHelper _databaseHelper = DatabaseHelper();
+  //final DatabaseHelper _databaseHelper = DatabaseHelper();
 
   @override
   void initState() {
@@ -37,8 +38,8 @@ class StatementWidgetState extends State<StatementWidget> {
   Future<void> _fetchPage(int pageKey) async {
     try {
       final offset = pageKey * _pageSize;
-      //final billDetails = await DB().getBillDetails(_pageSize, offset);
-      final billDetails = await _databaseHelper.fetchData(_pageSize, offset);
+      final billDetails = await DB().getBillDetails(_pageSize, offset);
+      //final billDetails = await _databaseHelper.fetchData(_pageSize, offset);
       final isLastPage = billDetails.isEmpty;
       if (isLastPage) {
         _pagingController.appendLastPage(billDetails);
@@ -77,11 +78,15 @@ class StatementWidgetState extends State<StatementWidget> {
             ),
             TextButton(
               onPressed: () {
-                DB().deleteBill(item['id']);
-                _pagingController.itemList?.remove(item);
-                //_pagingController.refresh();
-                _pagingController.itemList =
-                    List.from(_pagingController.itemList!);
+                try {
+                  DB().deleteBill(item['id']);
+                  _pagingController.itemList?.remove(item);
+                  //_pagingController.refresh();
+                  _pagingController.itemList =
+                      List.from(_pagingController.itemList!);
+                } catch (error) {
+                  showNoticeSnackBar(context, "$error");
+                }
                 Navigator.of(context).pop(); // Close the dialog
               },
               child: const Text('确认'),
@@ -161,11 +166,12 @@ class StatementWidgetState extends State<StatementWidget> {
   }
 }
 
+/*
 class DatabaseHelper {
   Future<List<Map<String, dynamic>>> fetchData(int limit, int offset) async {
     return await DB().getBillDetails(limit, offset);
   }
-}
+}*/
 
 
 
