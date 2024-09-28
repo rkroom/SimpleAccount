@@ -166,17 +166,24 @@ double checkDBResult(double? value) {
 
 Future<Map> periodicStatistics() async {
   var cmd = currentlyMonthDays();
-  var currentlyMonthConsumption = checkDBResult((await DB()
-      .timeStatistics(Transaction.consume.value, cmd[0], cmd[1]))[0]["amount"]);
   var today = getTodayRange();
-  var todayConsumption = checkDBResult((await DB().timeStatistics(
-      Transaction.consume.value, today[0], today[1]))[0]["amount"]);
   var previousDay = getPreviousDayRange();
-  var previousDayConsumption = checkDBResult((await DB().timeStatistics(
-      Transaction.consume.value, previousDay[0], previousDay[1]))[0]["amount"]);
+
+  // 使用 Future.wait 并行执行多个数据库查询
+  var results = await Future.wait([
+    DB().timeStatistics(Transaction.consume.value, cmd[0], cmd[1]),
+    DB().timeStatistics(Transaction.consume.value, today[0], today[1]),
+    DB().timeStatistics(Transaction.consume.value, previousDay[0], previousDay[1]),
+  ]);
+
+  // 处理查询结果
+  var currentlyMonthConsumption = checkDBResult(results[0][0]["amount"]);
+  var todayConsumption = checkDBResult(results[1][0]["amount"]);
+  var previousDayConsumption = checkDBResult(results[2][0]["amount"]);
+
   return {
     "currentlyMonthConsumption": currentlyMonthConsumption,
     "todayConsumption": todayConsumption,
-    "previousDayConsumption": previousDayConsumption
+    "previousDayConsumption": previousDayConsumption,
   };
 }

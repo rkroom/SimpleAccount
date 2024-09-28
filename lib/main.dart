@@ -1,20 +1,11 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:workmanager/workmanager.dart';
 
 import 'tools/config.dart';
 import 'tools/routes.dart';
-import 'tools/workmanager_tool.dart';
 
 void main() async {
   // 初始化数据之前，需要调用WidgetsFlutterBinding.ensureInitialized();
   WidgetsFlutterBinding.ensureInitialized();
-
-  //初始化Workmanager
-  await Workmanager().initialize(
-    callbackDispatcher,
-    isInDebugMode: kDebugMode, // 调试模式下设置为 true
-  );
 
   // 初始化数据之后再加载UI，以及账单监听服务
   await Global.init();

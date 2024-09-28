@@ -74,4 +74,16 @@ class ConfigService {
     var password = box.get("password");
     return Config(path, password);
   }
+
+  // 获取后台通知状态
+  Future<bool> getNotificationRegistered() async {
+    var box = await _box;
+    return box.get("isNotificationRegistered", defaultValue: false);
+  }
+
+  // 设置通知注册状态
+  Future<void> setNotificationRegistered(bool succeeded) async {
+    var box = await _box;
+    return box.put("isNotificationRegistered", succeeded);
+  }
 }

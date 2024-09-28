@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 
-
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
@@ -16,29 +15,28 @@ class BootReceiver : BroadcastReceiver() {
     }
 }
 
-/* 
-public class BootCompletedReceiver extends BroadcastReceiver {
-    @Override
-    public void onReceive(Context context, Intent intent) {
-        if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
+/*
+import androidx.work.Worker;
+import androidx.work.WorkerParameters;
+import androidx.work.WorkManager
+import androidx.work.OneTimeWorkRequest
+
+class BootCompletedReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        if (Intent.ACTION_BOOT_COMPLETED == intent.action) {
             // 这里调度 WorkManager
-            WorkManager.getInstance(context).enqueue(new OneTimeWorkRequest.Builder(MyWorker.class).build());
+            WorkManager.getInstance(context)
+                .enqueue(OneTimeWorkRequest.Builder(MyWorker::class.java).build())
         }
     }
 }
 
-import androidx.work.Worker;
-import androidx.work.WorkerParameters;
-
-public class MyWorker extends Worker {
-    public MyWorker(@NonNull Context context, @NonNull WorkerParameters workerParams) {
-        super(context, workerParams);
-    }
-    public Result doWork() {
+class MyWorker(context: Context, workerParams: WorkerParameters) : Worker(context, workerParams) {
+    override fun doWork(): Result {
         // 启动 NotificationListenerService
-        Intent intent = new Intent(applicationContext(), MyNotificationListenerService.class);
-        applicationContext().startService(intent);
-        return Result.success();
+        val intent = Intent(applicationContext, MyNotificationListenerService::class.java)
+        applicationContext.startService(intent)
+        return Result.success()
     }
 }
-*/
+ */

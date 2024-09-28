@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
-
+import 'package:permission_handler/permission_handler.dart';
 
 import '../tools/config.dart';
 import '../tools/db.dart';
@@ -254,6 +254,17 @@ class LoadingWidgetState extends State<LoadingWidget> {
                   String? targetFileName;
                   // 利用文件选择器选择文件
                   if (mounted) {
+                    PermissionStatus status = await Permission.storage.status;
+                    if (status != PermissionStatus.granted) {
+                      PermissionStatus requestStatus =
+                          await Permission.storage.request();
+                      if (requestStatus.isDenied) {
+                        return;
+                      } else if (requestStatus.isPermanentlyDenied) {
+                        openAppSettings();
+                        return;
+                      }
+                    }
                     var file =
                         (await FilePicker.platform.pickFiles())?.files.single;
                     filePath = file?.path;

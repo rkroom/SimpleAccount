@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:workmanager/workmanager.dart';
 
 import '../tools/config.dart';
 import '../tools/config_service.dart';
@@ -42,13 +43,25 @@ class BottomNavigationWidgetState extends State<BottomNavigationWidget>
   //定时器，应用进入后台后一定时间内未被再次打开则彻底退出应用。
   Timer? _exitTimer;
 
+  void checkAndSetWorkmanagerTasks() async {
+    bool succeeded = await ConfigService().getNotificationRegistered();
+    if (!succeeded) {
+      await NotificationService().initNotification();
+      //初始化Workmanager
+      await Workmanager().initialize(
+        callbackDispatcher,
+        isInDebugMode: kDebugMode, // 调试模式下设置为 true
+      );
+      scheduleDailyTask();
+      ConfigService().setNotificationRegistered(true);
+    }
+  }
+
   @override
 //initState是初始化函数，在绘制底部导航控件的时候就把这3个页面添加到list里面用于下面跟随标签导航进行切换显示
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    //初始化通知服务
-    NotificationService().initNotification();
     pages = [
       AddWidget(
         key: _childKey,
@@ -56,7 +69,7 @@ class BottomNavigationWidgetState extends State<BottomNavigationWidget>
       const StatementWidget(),
       const AccountWidget()
     ];
-    scheduleDailyTask();
+    checkAndSetWorkmanagerTasks();
     if (kDebugMode) {
       NativeMethodChannel.instance
           .setMethodCallHandler((MethodCall call) async {
@@ -170,11 +183,13 @@ class BottomNavigationWidgetState extends State<BottomNavigationWidget>
                 title: const Text('导出账本'),
                 onTap: () async {
                   PermissionStatus status = await Permission.storage.status;
-
                   if (status != PermissionStatus.granted) {
                     PermissionStatus requestStatus =
                         await Permission.storage.request();
-                    if (requestStatus != PermissionStatus.granted) {
+                    if (requestStatus.isDenied) {
+                      return;
+                    } else if (requestStatus.isPermanentlyDenied) {
+                      openAppSettings();
                       return;
                     }
                   }
