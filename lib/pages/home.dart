@@ -40,20 +40,43 @@ class BottomNavigationWidgetState extends State<BottomNavigationWidget>
   List titles = ["添加", "账单", "账户"];
 
   bool _isReturningFromSettings = false;
-  //定时器，应用进入后台后一定时间内未被再次打开则彻底退出应用。
+  //  定时器，应用进入后台后一定时间内未被再次打开则彻底退出应用。
   Timer? _exitTimer;
+
+  bool isSameDate(DateTime date1, DateTime date2) {
+    return date1.year == date2.year &&
+        date1.month == date2.month &&
+        date1.day == date2.day;
+  }
+
+  Future<void> initializeAndScheduleTask() async {
+    // 初始化Workmanager
+    await Workmanager().initialize(
+      callbackDispatcher,
+      isInDebugMode: kDebugMode, // 调试模式下设置为 true
+    );
+    scheduleDailyTask();
+    ConfigService().setScheduledTaskTime(DateTime.now());
+  }
 
   void checkAndSetWorkmanagerTasks() async {
     bool succeeded = await ConfigService().getNotificationRegistered();
     if (!succeeded) {
       await NotificationService().initNotification();
-      //初始化Workmanager
-      await Workmanager().initialize(
-        callbackDispatcher,
-        isInDebugMode: kDebugMode, // 调试模式下设置为 true
-      );
-      scheduleDailyTask();
+      await initializeAndScheduleTask();
       ConfigService().setNotificationRegistered(true);
+      return;
+    }
+    DateTime? scheduledTaskTime = await ConfigService().getScheduledTaskTime();
+    if (scheduledTaskTime == null) {
+      await initializeAndScheduleTask();
+      return;
+    }
+    final now = DateTime.now();
+    if (!isSameDate(scheduledTaskTime, now.add(const Duration(days: -1))) &&
+        !isSameDate(scheduledTaskTime, now)) {
+      await initializeAndScheduleTask();
+      return;
     }
   }
 

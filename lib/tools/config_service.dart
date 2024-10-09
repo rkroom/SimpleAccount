@@ -86,4 +86,16 @@ class ConfigService {
     var box = await _box;
     return box.put("isNotificationRegistered", succeeded);
   }
+
+  // 获取后台任务执行时间
+  Future<DateTime?> getScheduledTaskTime() async {
+    var box = await _box;
+    return box.get("scheduledTaskTime", defaultValue: null);
+  }
+
+  // 设置后台任务执行时间
+  Future<void> setScheduledTaskTime(DateTime time) async {
+    var box = await _box;
+    box.put("scheduledTaskTime", time);
+  }
 }

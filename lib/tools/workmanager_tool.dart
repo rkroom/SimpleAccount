@@ -1,3 +1,4 @@
+import 'package:simple_account/tools/config_service.dart';
 import 'package:workmanager/workmanager.dart';
 
 import 'config.dart';
@@ -14,6 +15,7 @@ void callbackDispatcher() {
 
     // 在任务执行完后重新注册下次任务
     scheduleDailyTask();
+    ConfigService().setScheduledTaskTime(DateTime.now());
     return Future.value(true);
   });
 }
